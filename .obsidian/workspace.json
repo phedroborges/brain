@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Isso é mais um teste.md",
+                "file": "A trava dos 100k de faturamento.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Isso é mais um teste"
+              "title": "A trava dos 100k de faturamento"
             }
           }
         ]
@@ -184,10 +184,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "875a3915b944b661",
+  "active": "f7d1c140d5e135ed",
   "lastOpenFiles": [
-    "brain/Teste de commit.md",
-    "Isso é mais um teste.md",
+    "README.md",
+    "A trava dos 100k de faturamento.md",
+    "Coisas que os empresários já sabem, mas me pagam para dizer.md",
     "brain/README.md",
     "Welcome.md",
     "brain"

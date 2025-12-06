@@ -1,0 +1,3 @@
+É incrível como muitos negócios chegam nos 100k da faturamento. Pessoas sem muito conhecimento, pessoas que nem entendem de contabilidade direito conseguem chegar nos 100k/mês, mas o grande problema é a última linha.
+
+Essas mesmas pessoas veem os seus negócios vendendo 100k mês, mas não conseguem ficar com nem 5 mil reais no bolso e no fim vem aquela pergunta: Será que todo esse trabalho está valendo a pena? Será que não vale voltar a ser CLT e ganhar mais que isso sem tantas dores de cabeça?
