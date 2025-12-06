@@ -1,16 +1,27 @@
-Eu sei que você não cadastra o teu cliente no sistema da empresa e eu sei também que você saber que precisa cadastrar.
+Se você acha que cadastrar nome e telefone do cliente é demorado, pode fechar seu negócio agora. Porque você não tá pronto pra crescer.
 
-O dono do negócio local que fatura 100 mill por mês precisa entender que se ele não se comportar como as grandes empresas eles nunca será uma grande empresa.
+A verdade é essa: se você quer faturar como grande empresa mas continua se comportando como uma barraquinha de feira, você nunca vai chegar lá. Simples assim.
 
-Quando o assunto é ter histórico de cliente, entender os números da empresa, custo, margem, melhores produtos, melhores categorias, melhores dias, sazonalidades. Isso é o básico!
+O dono do negócio local que fatura 100 mil por mês precisa entender isso. Se você não se comportar como as grandes empresas, você nunca vai ser uma grande empresa. E comportamento de grande empresa não é ter escritório bonito ou logo caro. É ter dados.
 
-E eu não estou falando de "Eu acho que esse produto vende mais" com base nos números que você tirou nem sei da onde, estou falando de dados concretos, de certeza. É isso que faz a diferença.
+Quando o assunto é ter histórico de cliente, entender os números da empresa, custo, margem, melhores produtos, melhores categorias, melhores dias, sazonalidades, isso é o básico. Isso não é diferencial. Isso é o mínimo.
 
-Então fica ligado com esses pontos:
-1. Cadastro do cliente
-2. Histórico de pedidos do cliente
-3. E pós venda com acesso aos dados do que o cliente costuma pedir
+Mas você tá lá vendendo no achismo. Eu acho que esse produto vende mais. Eu acho que esse cliente compra toda semana. Eu acho que essa categoria tá indo bem. E quando eu pergunto de onde você tirou esses números, você fica sem resposta. Porque você não tem dados concretos. Você tem palpite.
 
-Seu comercial vai dar um show e com certeza sua conversão vai aumentar, porque nunca mais você vai ter que começar uma venda do zero com o mesmo cliente e principalmente qualquer vendedor consegue saber tudo sobre o cliente na hora da venda, você não fica dependente de ninguém.
+E palpite não escala negócio. Certeza escala.
 
-Escuta o que eu estou falando, nunca mais deixa o seu cliente sair da sua empresa sem ter o cadastro dele.
+Então vamos falar claro sobre o que você precisa ter no mínimo. Cadastro do cliente completo. Histórico de pedidos desse cliente. E pós venda com acesso aos dados do que o cliente costuma pedir. Isso não é luxo. Isso é obrigação.
+
+Sabe o que acontece quando você tem isso? Seu comercial dá um show. Sua conversão aumenta. Porque você nunca mais começa uma venda do zero com o mesmo cliente. O vendedor abre o sistema e já sabe tudo. O cliente compra tal produto a cada 15 dias. O ticket médio dele é X. Ele tem preferência por tal categoria. Ele ligou mês passado reclamando de Y.
+
+E sabe o melhor? Você não fica dependente de ninguém. Aquele vendedor que é o único que conhece o cliente pode sair amanhã que não faz diferença. Porque o conhecimento tá no sistema, não na cabeça de uma pessoa.
+
+Mas tem empresário que continua resistindo. Ah, mas dá trabalho cadastrar. Ah, mas meu cliente não quer dar dados. Ah, mas eu já conheço meus clientes de cabeça. E enquanto você tá nessa resistência besta, seu concorrente tá construindo banco de dados. Ele tá analisando padrão de compra. Ele tá fazendo remarketing certeiro. Ele tá crescendo enquanto você tá parado.
+
+Escuta o que eu tô falando. Nunca mais deixa seu cliente sair da sua empresa sem ter o cadastro dele. Nunca mais. Se o cara comprou, você tem que ter no mínimo nome, telefone e e-mail. No mínimo. E se você conseguir mais, melhor ainda.
+
+Porque cada cliente que sai sem cadastro é dinheiro jogado fora. É oportunidade perdida. É dado que você nunca mais vai recuperar.
+
+Então para de enrolar. Para de achar que seu negocinho pequeno não precisa disso. Precisa sim. Aliás, é justamente porque você é pequeno que precisa fazer isso agora. Porque quando você crescer, vai ser tarde demais pra começar.
+
+Comenta aqui: você cadastra 100% dos seus clientes ou ainda tá na base do achismo? Quero saber quantos empresários aqui tão levando negócio a sério de verdade.
