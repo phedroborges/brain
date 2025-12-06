@@ -2,7 +2,7 @@
 
 Seja bem-vindo a mais um café com visão.
 
-É incrível como tem gente que chega nos 100k de faturamento sem entender porra nenhuma de negócio. Não sabe fazer um balanço. Não entende de contabilidade. Mal sabe o que é DRE. Mas vende. Vende muito.
+É incrível como tem gente que chega nos 100k de faturamento sem entender nada de negócio. Não sabe fazer um balanço. Não entende de contabilidade. Mal sabe o que é DRE. Mas vende. Vende muito.
 
 Aí você olha o extrato no final do mês e vê 100k de faturamento e 5k no bolso. E vem aquela pergunta que todo empresário nessa faixa já fez: será que vale a pena? Porque cara, tem CLT ganhando 8k sem dor de cabeça nenhuma.
 
