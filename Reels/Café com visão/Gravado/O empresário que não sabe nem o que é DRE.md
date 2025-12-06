@@ -1,4 +1,4 @@
-Há um ano atrás eu achava que era um empresário, mas nem sabia o que era DRE.
+Há um ano atrás eu achava que estava empreendendo, mas nem sabia o que era DRE.
 
 Seja bem-vindo a mais um café com visão. Hoje o café está com cheiro de experiência própria.
 

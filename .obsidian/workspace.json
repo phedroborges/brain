@@ -27,7 +27,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Reels/Café com visão/Coisas que os empresários já sabem, mas me pagam para dizer.md",
+                "file": "Reels/Café com visão/Gravado/Coisas que os empresários já sabem, mas me pagam para dizer.md",
                 "mode": "source",
                 "source": false
               },
@@ -41,7 +41,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Reels/Café com visão/Empresário perdendo dados por pressa burra.md",
+                "file": "Reels/Café com visão/Gravado/Empresário perdendo dados por pressa burra.md",
                 "mode": "source",
                 "source": false
               },
@@ -69,7 +69,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Reels/Café com visão/O empresário que não sabe nem o que é DRE.md",
+                "file": "Reels/Café com visão/Gravado/O empresário que não sabe nem o que é DRE.md",
                 "mode": "source",
                 "source": false
               },
@@ -111,7 +111,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Reels/Café com visão/O salário dos sonhos do brasileiro.md",
+                "file": "Reels/Café com visão/Gravado/O salário dos sonhos do brasileiro.md",
                 "mode": "source",
                 "source": false
               },
@@ -153,12 +153,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Reels/Café com visão/Coisas que os empresários já sabem, mas me pagam para dizer.md",
+                "file": "Reels/Café com visão/Gravado/O salário dos sonhos do brasileiro.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Coisas que os empresários já sabem, mas me pagam para dizer"
+              "title": "O salário dos sonhos do brasileiro"
             }
           }
         ],
@@ -215,8 +215,7 @@
               "title": "Bookmarks"
             }
           }
-        ],
-        "currentTab": 2
+        ]
       }
     ],
     "direction": "horizontal",
@@ -326,24 +325,25 @@
       "bases:Create new base": false
     }
   },
-  "active": "a9e412c32c515ba6",
+  "active": "875a3915b944b661",
   "lastOpenFiles": [
-    "Reels/Café com visão/Empresário perdendo dados por pressa burra.md",
-    "Reels/Café com visão/Coisas que os empresários já sabem, mas me pagam para dizer.md",
+    "Reels/Café com visão/O olho do dono é que engorda o gado.md",
+    "Reels/Café com visão/Gravado/O salário dos sonhos do brasileiro.md",
+    "Reels/Café com visão/Sem estrutura você precisa parar de vender.md",
+    "Reels/Café com visão/Gravado/O empresário que não sabe nem o que é DRE.md",
+    "Reels/Café com visão/O centralismo é o vilão das empresas.md",
+    "Reels/Café com visão/Gravado/Empresário perdendo dados por pressa burra.md",
     "Reels/Café com visão/Aproveitamento de oportunidade - caso Miriam e Flávio Augusto.md",
     "Reels/Café com visão/A trava dos 100k de faturamento.md",
+    "Reels/Café com visão/Gravado/Coisas que os empresários já sabem, mas me pagam para dizer.md",
+    "Reels/Café com visão/Gravado",
+    "Reels/Café com visão/Empresário que não sabe a sua própria margem de lucro.md",
     "Carrosséis/Case netflix e warner.md",
     "Carrosséis/Fala que faz, mas na verdade não faz nada.md",
     "Carrosséis",
     "README.md",
-    "Reels/Café com visão/O centralismo é o vilão das empresas.md",
-    "Reels/Café com visão/O empresário que não sabe nem o que é DRE.md",
-    "Reels/Café com visão/O salário dos sonhos do brasileiro.md",
-    "Reels/Café com visão/Sem estrutura você precisa parar de vender.md",
-    "Reels/Café com visão/Empresário que não sabe a sua própria margem de lucro.md",
     "Reels/Café com visão",
     "Reels",
-    "Reels/Café com visão/O olho do dono é que engorda o gado.md",
     "brain/README.md",
     "Welcome.md",
     "brain"
