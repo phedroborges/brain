@@ -1,5 +1,7 @@
 Se você acha que cadastrar nome e telefone do cliente é demorado, pode fechar seu negócio agora. Porque você não tá pronto pra crescer.
 
+Seja bem-vindo a mais um café com visão.
+
 A verdade é essa: se você quer faturar como grande empresa mas continua se comportando como uma barraquinha de feira, você nunca vai chegar lá. Simples assim.
 
 O dono do negócio local que fatura 100 mil por mês precisa entender isso. Se você não se comportar como as grandes empresas, você nunca vai ser uma grande empresa. E comportamento de grande empresa não é ter escritório bonito ou logo caro. É ter dados.

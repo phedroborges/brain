@@ -1,5 +1,7 @@
 Eu ganho dinheiro dizendo o óbvio. E você provavelmente pagaria por isso também.
 
+Seja bem-vindo a mais um café com visão.
+
 A real é que todo empresário que me contrata já sabe o que eu vou falar. Eles sabem que precisam contratar gente boa. Sabem que precisam ter processo. Sabem que precisam parar de ser o gargalo da própria empresa. Mas mesmo assim me pagam pra eu sentar na frente deles e falar exatamente isso.
 
 E não é porque eles são burros. É porque saber e fazer são duas coisas completamente diferentes.

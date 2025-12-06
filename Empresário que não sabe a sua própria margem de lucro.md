@@ -1,5 +1,7 @@
 É por isso que muitos negócios vendem muito, mas no fim da linha não sobra nada de lucro.
 
+Seja bem-vindo a mais um café com visão.
+
 Você vê empresa faturando 100 mil, 200 mil, 500 mil por mês. Movimento de cliente todo dia. Caixa registrando venda direto. E quando chega no final do mês o dono tá duro. Sem dinheiro no bolso. Trabalhando igual um condenado e ganhando menos que um CLT.
 
 Sabe por quê? Porque vender não é lucrar. E a maioria dos empresários confunde as duas coisas.

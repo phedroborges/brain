@@ -1,4 +1,6 @@
-100 mil reais de faturamento. E 3 mil no bolso.
+100 mil reais de faturamento, mas só sobra 5 mil no bolso...
+
+Seja bem-vindo a mais um café com visão.
 
 É incrível como tem gente que chega nos 100k de faturamento sem entender porra nenhuma de negócio. Não sabe fazer um balanço. Não entende de contabilidade. Mal sabe o que é DRE. Mas vende. Vende muito.
 
