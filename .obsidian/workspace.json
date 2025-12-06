@@ -69,16 +69,30 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Empresário que não sabe a sua própria margem de lucro.md",
+                "file": "O empresário que não sabe nem o que é DRE.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Empresário que não sabe a sua própria margem de lucro"
+              "title": "O empresário que não sabe nem o que é DRE"
+            }
+          },
+          {
+            "id": "f87b8e10921f1711",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "O empresário que não sabe nem o que é DRE.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "O empresário que não sabe nem o que é DRE"
             }
           }
         ],
-        "currentTab": 4
+        "currentTab": 5
       }
     ],
     "direction": "vertical"
@@ -241,8 +255,9 @@
       "bases:Create new base": false
     }
   },
-  "active": "bb76dc8701cbe00e",
+  "active": "f87b8e10921f1711",
   "lastOpenFiles": [
+    "Sem estrutura você precisa parar de vender.md",
     "O empresário que não sabe nem o que é DRE.md",
     "README.md",
     "Empresário que não sabe a sua própria margem de lucro.md",

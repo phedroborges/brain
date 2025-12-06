@@ -1,4 +1,8 @@
-Há um ano atrás eu achava que era um empresário, mas nem sabia o que era DRE. Eu chamava aquilo de "resumo financeiro" porque de fato eu nunca nem tinha escutado falar disso. Até que alguém me perguntou sobre DRE e eu fiquei completamente boiando. Aí eu fui buscar. E quando eu entendi, mudou tudo.
+Há um ano atrás eu achava que era um empresário, mas nem sabia o que era DRE.
+
+Seja bem-vindo a mais um café com visão. Hoje o café está com cheiro de experiência própria.
+
+Eu chamava aquilo de "resumo financeiro" porque de fato eu nunca nem tinha escutado falar disso. Até que alguém me perguntou sobre DRE e eu fiquei completamente boiando. Aí eu fui buscar. E quando eu entendi, mudou tudo.
 
 Porque DRE não é só um documento chato que seu contador manda todo mês. DRE é o mapa financeiro da sua empresa. E dentro de uma empresa você tem vários mapas. Tem o mapa de processos, o mapa de pessoas, o mapa de mercado. Mas o DRE é o mapa que te mostra o caminho pro tesouro. E o tesouro é uma empresa saudável com margem de verdade.
 
