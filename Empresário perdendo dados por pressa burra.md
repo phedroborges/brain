@@ -24,4 +24,4 @@ Porque cada cliente que sai sem cadastro é dinheiro jogado fora. É oportunidad
 
 Então para de enrolar. Para de achar que seu negocinho pequeno não precisa disso. Precisa sim. Aliás, é justamente porque você é pequeno que precisa fazer isso agora. Porque quando você crescer, vai ser tarde demais pra começar.
 
-Comenta aqui: você cadastra 100% dos seus clientes ou ainda tá na base do achismo? Quero saber quantos empresários aqui tão levando negócio a sério de verdade.
+Eu sou Phedro Borges, gestor de marcas e crio conteúdo todos os dias para te ajudar e estruturar o seu negócio. Se esse vídeo fez sentido pra você me segue aqui e me chama pelo link da bio.

@@ -22,4 +22,4 @@ Quando você me paga, você cria um compromisso. Agora tem alguém cobrando. Ago
 
 Então se você tá me ouvindo e pensando, cara, eu já sei disso tudo, ótimo. Você já tá na frente de 90% das pessoas. Mas a pergunta que fica é: você tá fazendo?
 
-Comenta aqui uma coisa que você SABE que precisa fazer no seu negócio mas tá empurrando com a barriga. Quero ver se você tem coragem de admitir.
+Eu sou Phedro Borges, gestor de marcas e crio conteúdo todos os dias para te ajudar e estruturar o seu negócio. Se esse vídeo fez sentido pra você me segue aqui e me chama pelo link da bio.

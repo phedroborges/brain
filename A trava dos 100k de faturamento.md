@@ -24,4 +24,4 @@ Olha, eu sei que isso não é sexy. Ninguém quer ouvir que precisa desacelerar 
 
 Então a pergunta é simples: você quer continuar nesse loop infinito de faturar alto e lucrar baixo? Ou você quer parar, estruturar e realmente crescer?
 
-Comenta aqui: você tá faturando quanto? E tá sobrando quanto? Quero saber se você tá nesse inferno também.
+Eu sou Phedro Borges, gestor de marcas e crio conteúdo todos os dias para te ajudar e estruturar o seu negócio. Se esse vídeo fez sentido pra você me segue aqui e me chama pelo link da bio.

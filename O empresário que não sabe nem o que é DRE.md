@@ -12,4 +12,4 @@ Então para de terceirizar isso pro contador e achar que tá tudo bem. Contador 
 
 E eu sei que contabilidade parece chato. Eu sei que você prefere ficar vendendo, criando produto, atendendo cliente. Mas se você não parar pra olhar os números, você vai acordar daqui seis meses percebendo que vendeu muito e não ganhou nada. E aí já era.
 
-Comenta aqui: você sabe ler seu DRE de verdade ou só olha o lucro final no final do mês? Quero ver quantos empresários aqui tão no comando do negócio ou só achando que tão.
+Eu sou Phedro Borges, gestor de marcas e crio conteúdo todos os dias para te ajudar e estruturar o seu negócio. Se esse vídeo fez sentido pra você me segue aqui e me chama pelo link da bio.
