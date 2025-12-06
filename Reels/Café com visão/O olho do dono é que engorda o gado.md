@@ -1,0 +1,25 @@
+O olho do dono é que engorda o gado, mas não é qualquer olho, é a visão certa que faz a diferença.
+
+Todo mundo conhece esse ditado, mas a maioria entende errado. Não é sobre microgerenciar tudo, não é sobre estar presente em cada detalhe, é sobre ter a visão do que sua empresa precisa pra crescer de verdade. E a diferença entre empresa que cresce e empresa que fica estagnada não é tamanho, não é faturamento, não é tempo de mercado, é a visão do dono sobre o que é necessário fazer.
+
+Grandes empresas fazem coisas que pequenas ignoram, e enquanto você ignorar essas coisas você vai continuar pequeno, não importa quanto você venda. Porque se você não enxerga o que precisa mudar, sua empresa nunca vai mudar.
+
+Vou te mostrar os 3 pontos que o empresário visionário enxerga e que separam quem cresce de quem fica parado. E se você não enxerga nenhum dos 3, você não tem visão empresarial, você tá só apagando incêndio.
+
+Primeiro ponto: empresário visionário sabe que precisa ter acesso ao máximo de dados do seu negócio, porque quanto mais ele entende melhor são as decisões dele. Ele enxerga que precisa saber tudo sobre o cliente, quando ele compra, o que ele compra, quanto ele gasta, qual a frequência, qual o ticket médio, qual a categoria preferida. E ele usa esses dados pra tomar decisão certeira, pra antecipar necessidade, pra oferecer no momento certo. Empresário sem visão não tem nada disso, vende pro cliente como se fosse a primeira vez toda vez, não sabe quem é o melhor cliente, não sabe quem tá comprando menos, não sabe quem parou de comprar. E quando eu pergunto por que não tem esses dados a resposta é sempre a mesma: ah, mas dá trabalho cadastrar, ah, mas meu cliente não quer dar informação, ah, mas eu já conheço meu cliente de cabeça. Mentira, você não conhece, você acha que conhece.
+
+Segundo ponto: empresário visionário enxerga que precisa estruturar o comercial com estratégia de verdade. Ele entende que precisa ter processo de vendas definido, script que funciona, CRM rastreando cada lead, funil organizado, time treinado que sabe exatamente o que falar em cada etapa. Ele não deixa a venda na mão do improviso, ele constrói um sistema que funciona. Empresário sem visão deixa cada vendedor fazer do jeito que acha melhor, não tem acompanhamento, não tem métrica, não tem previsibilidade. E quando a venda não vem ninguém sabe o motivo, porque ninguém tá medindo nada. Comercial sem estrutura é loteria, você torce pra dar certo mas não sabe por que deu certo quando funciona e não sabe por que deu errado quando falha.
+
+Terceiro ponto: empresário visionário entende que precisa ter múltiplos canais de distribuição validados. Ele não fica dependente de um canal só, ele testa vários, valida o que funciona, expande onde dá resultado. Se um canal cair ele tem outros sustentando. Empresário sem visão fica dependente de um único lugar, vende só no Instagram ou só no ponto físico ou só no marketplace, e quando aquele canal trava ele quebra junto. E eu sei que abrir novos canais dá trabalho, exige investimento, exige teste, mas é essa visão que te protege e que te faz crescer de verdade.
+
+Agora vem a parte que dói: implementar esses 3 comportamentos no começo dá muito trabalho. Não é fácil, não é rápido, não é automático. Colocar um ERP bom funcionando, estruturar comercial de verdade, validar canais de distribuição, tudo isso exige esforço, tempo e dinheiro. Mas sabe o que exige mais? Continuar operando sem isso e nunca conseguir escalar.
+
+E eu vejo dois tipos de empresário que ignoram esses comportamentos. O primeiro tipo nem sabe que precisa fazer isso, ele vai no automático, escuta conselho de amigo que também não sabe, repete o que todo mundo faz e fica na mediocridade junto com todo mundo. O segundo tipo sabe que precisa mas acha que não tá na hora ainda ou que é caro demais. E fica adiando, esperando o momento perfeito que nunca chega, ou esperando ter mais dinheiro pra investir nisso, mas como ele não investe ele não cresce e continua sem dinheiro.
+
+Então vou te falar uma verdade: se você quer faturar como grande empresa, você precisa se comportar como grande empresa desde agora. Não quando você crescer, não quando você tiver mais dinheiro, não quando você achar que tá na hora. Agora. Porque comportamento de pequeno empresa gera resultado de pequeno empresa, e você pode trabalhar 20 anos assim que não vai mudar.
+
+O empresário que cresce não é o que tem mais dinheiro pra investir, é o que entende que investir nesses comportamentos é o que vai gerar o dinheiro. Ele coloca ERP antes de precisar, estrutura comercial antes de ter 10 vendedores, testa canal novo antes de saturar o atual. E por isso ele sai na frente.
+
+Comenta aqui: dos 3 comportamentos, quantos você realmente tem na sua empresa? Porque marca forte só se sustenta em cima de operação forte, e operação forte é aquela que se comporta como grande desde o início.
+
+Eu sou Phedro Borges, gestor de marcas e crio conteúdo todos os dias para te ajudar a estruturar o seu negócio. Se esse vídeo fez sentido pra você me segue aqui e me chama pelo link da bio.
