@@ -42,3 +42,5 @@ Dentro de casa a frase é:
 9. Você precisa fazer isso e aquilo se não não dá certo
 10. ...
 
+Eu vivi 20 anos dentro de uma casa que embora seja resiliente a mulher da casa tem como premissa principal reclamação e sexo e cada um segue a sua vida.
+
