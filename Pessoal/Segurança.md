@@ -22,7 +22,7 @@ Moral da história:
 Pode não estar acontecendo nada, entretanto é uma cadeia de eventos seguidos que me deixa intrigado, o que me faz vir falar com você para esclarecer tudo isso.
 
 A minha hipótese:
-A primeira validação que foi necessária era minha, se realmente iria dar certo. A segunda validação foi a familiar, a terceira foi firmar o relacionamento, tendo em vista que eu não tinha feito o pedido, mas agora tem a minha validação aos olhos de quem é importante para você e essas pessoas não estão aqui, elas estão na Internet. Seus chefes, amigos ricos, pessoas de longe, quem conversa contigo, você tem vergonha do relacionamento atual aos olhos dessas pessoas, porque nada justifica a sua falta de interesse nesse tipo de conteúdo.
+A primeira validação que foi necessária era minha, se realmente iria dar certo. A segunda validação foi a familiar, a terceira foi firmar o relacionamento, tendo em vista que eu não tinha feito o pedido, mas agora tem a minha validação aos olhos de quem é importante para você e essas pessoas não estão aqui, elas estão na Internet. Seus chefes, amigos ricos, pessoas de longe, quem conversa contigo, você tem vergonha do relacionamento atual aos olhos dessas pessoas, porque nada justifica a sua falta de interesse nesse tipo de conteúdo. Você se posiciona com uma pessoa solteira porque tem receio de me apresentar.
 
 Eu nunca vi a Roberta desafazer do Muzy ou não ser a primeira a estar junto com ele, nunca vi a Malu não estar junto com o Bruno no que ele precisar fazer... Você admira tanto algumas pessoas, mas não espelha isso na sua vida.
 
@@ -35,11 +35,13 @@ Falta reforço positivo dentro de casa... enquanto QUALQUER pessoa que está lá
 4. Planta bananeira
 5. Tem isso e aquilo
 
-Dentro de casa a frase é:
+Dentro de casa na primeira oportunidade tu me rebaixa para os outros, sempre no tom de "brincadeira":
 6. Tá tudo errado
 7. Mas você não faz nada direito
 8. Todo desarrumado
 9. Você precisa fazer isso e aquilo se não não dá certo
 10. ...
+
+Com o Lorran lá em casa foi ótimo você falando várias coisas e eles te rebatendo.
 
 Eu vivi 20 anos dentro de uma casa que embora seja resiliente a mulher da casa tem como premissa principal reclamação e sexo e cada um segue a sua vida.
