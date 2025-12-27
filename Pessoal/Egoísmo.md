@@ -8,5 +8,5 @@ E o pior de tudo é que você tem 32 anos, um carro, ganha 5k/mês e tem uma emp
 
 Nos somos dois empreendedores e até hoje a gente não teve o momento de sentar e conversar sobre como fazer mais dinheiro... A gente não para para analisar o que foi feito, eu já montei, mas até hoje você não sentou para fazer suas metas, objetivos, ideias pra o próximo ano e principalmente para os 5 anos...
 
-Sempre é uma conversinha de canto da parede com ambos avisando que vai fazer as coisas, sem conversa...
+Sempre é uma conversinha de canto da parede com ambos avisando que vai fazer as coisas, sem conversa... Da boca pra fora já foi filho, casa, carro, moto, terreno... A mesma coisa que acontece com seu sócio na loja acontece aqui, a diferença é que a pessoa que está sempre fazendo outra coisa é você.
 
