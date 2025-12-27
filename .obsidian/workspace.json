@@ -181,12 +181,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Pessoal/Dúvida.md",
+                "file": "Pessoal/Sobre segurança.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Dúvida"
+              "title": "Sobre segurança"
             }
           }
         ],
@@ -353,10 +353,10 @@
       "bases:Create new base": false
     }
   },
-  "active": "875a3915b944b661",
+  "active": "56aedb5cb7ef769a",
   "lastOpenFiles": [
-    "Pessoal/Sobre segurança.md",
     "Pessoal/Dúvida.md",
+    "Pessoal/Sobre segurança.md",
     "Carrosséis/Case netflix e warner.md",
     "Pessoal",
     "Carrosséis/Fala que faz, mas na verdade não faz nada.md",

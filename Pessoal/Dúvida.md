@@ -12,3 +12,4 @@ A primeira coisa é que a loja está travada no faturamento a alguns meses, o se
 
 Tu quer por uma grana que não tem num negócio de um investimento de mais de 100 mil facilmente que te retorna rodando bem 10 mil por mês de faturamento, se estiver tudo perfeito pode trazer uma margem de 50%, ou seja, payback em quase dois anos.
 
+Meu ponto não é se faz sentido ou não, mas me explica de onde você pensa em tirar retorno desse negócio, porque se fizer sentido tem que pode energia máxima a viabilizar sem pensar em outra coisa.
