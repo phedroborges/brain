@@ -43,4 +43,3 @@ Dentro de casa a frase é:
 10. ...
 
 Eu vivi 20 anos dentro de uma casa que embora seja resiliente a mulher da casa tem como premissa principal reclamação e sexo e cada um segue a sua vida.
-
