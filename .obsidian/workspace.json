@@ -174,9 +174,23 @@
               "icon": "lucide-file",
               "title": "Sobre segurança"
             }
+          },
+          {
+            "id": "56aedb5cb7ef769a",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Pessoal/Dúvida.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Dúvida"
+            }
           }
         ],
-        "currentTab": 11
+        "currentTab": 12
       }
     ],
     "direction": "vertical"
@@ -339,10 +353,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "e2d2f0dca1a144db",
+  "active": "875a3915b944b661",
   "lastOpenFiles": [
-    "Carrosséis/Case netflix e warner.md",
     "Pessoal/Sobre segurança.md",
+    "Pessoal/Dúvida.md",
+    "Carrosséis/Case netflix e warner.md",
     "Pessoal",
     "Carrosséis/Fala que faz, mas na verdade não faz nada.md",
     "Reels/Café com visão/O olho do dono é que engorda o gado.md",
