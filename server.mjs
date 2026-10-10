@@ -161,7 +161,14 @@ async function rotear(pedido, projetos) {
     cwd: path.join(PEDIDOS, pedido.id),
     entrada: prompt,
   });
-  if (r.codigo !== 0) throw new Error(`roteador falhou (${r.codigo}): ${r.erro || r.saida}`.slice(0, 500));
+  if (r.codigo !== 0) {
+    // O motivo vem no campo "result" do JSON (ex.: "Not logged in"); o resto é telemetria.
+    let motivo = '';
+    try {
+      motivo = JSON.parse(r.saida).result || '';
+    } catch {}
+    throw new Error(`O Claude não conseguiu rotear o pedido: ${(motivo || r.erro || r.saida).trim().slice(0, 400)}`);
+  }
   const texto = JSON.parse(r.saida).result ?? '';
   const achado = texto.match(/\{[\s\S]*\}/);
   if (!achado) throw new Error('roteador não devolveu JSON: ' + texto.slice(0, 200));
@@ -283,6 +290,16 @@ async function processar(pedido) {
   try {
     const projetos = lerProjetos();
     let projeto = projetos.find((p) => p.id === pedido.projeto);
+
+    // Sem login não adianta tentar: o roteador usa o Claude e o executor, o agente escolhido.
+    const conexoes = await statusConexoes();
+    const precisa = [...new Set([...(projeto ? [] : ['claude']), pedido.agente || projeto?.agente || 'claude'])];
+    const faltando = precisa.filter((id) => !conexoes[id]).map((id) => CONEXOES[id].nome);
+    if (faltando.length) {
+      pedido.status = 'erro';
+      pedido.erro = `${faltando.join(' e ')} não está conectado nesta máquina. Vá em Conexões, no fim da página, e clique em Conectar.`;
+      return salvar(pedido);
+    }
 
     if (!projeto) {
       pedido.status = 'roteando';
