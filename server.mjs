@@ -597,14 +597,24 @@ async function rotasConexoes(req, res, url) {
 
 // ---------- login (só quando há BRAIN_SENHA) ----------
 
-const sessoes = new Map(); // token -> validade (ms)
+// As sessões ficam em disco (só o hash do token) para o login sobreviver a
+// reinícios e redeploys do servidor.
+const ARQ_SESSOES = path.join(DADOS, 'sessoes.json');
+const hashDe = (token) => crypto.createHash('sha256').update(token).digest('hex');
+const sessoes = new Map(); // hash do token -> validade (ms)
+try {
+  for (const [h, validade] of Object.entries(JSON.parse(fs.readFileSync(ARQ_SESSOES, 'utf8')))) {
+    if (validade > Date.now()) sessoes.set(h, validade);
+  }
+} catch {}
+const salvarSessoes = () => fs.writeFileSync(ARQ_SESSOES, JSON.stringify(Object.fromEntries(sessoes)), { mode: 0o600 });
 const falhas = new Map(); // ip -> { n, ate }
-const SESSAO_MS = 30 * 24 * 60 * 60 * 1000;
+const SESSAO_MS = 90 * 24 * 60 * 60 * 1000;
 
 function logado(req) {
   if (!SENHA) return true;
   const token = (req.headers.cookie || '').match(/(?:^|;\s*)central_sessao=([a-f0-9]{64})/)?.[1];
-  const validade = token && sessoes.get(token);
+  const validade = token && sessoes.get(hashDe(token));
   if (!validade || validade < Date.now()) return false;
   return true;
 }
@@ -623,7 +633,8 @@ async function entrar(req, res) {
   }
   falhas.delete(ip);
   const token = crypto.randomBytes(32).toString('hex');
-  sessoes.set(token, Date.now() + SESSAO_MS);
+  sessoes.set(hashDe(token), Date.now() + SESSAO_MS);
+  salvarSessoes();
   const seguro = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
   res.setHeader('set-cookie', `central_sessao=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSAO_MS / 1000}${seguro}`);
   responder(res, 200, { ok: true });
