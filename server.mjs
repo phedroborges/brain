@@ -228,8 +228,12 @@ async function rotear(pedido, projetos) {
     `- "projeto": é trabalho ou pergunta sobre um dos projetos da lista. Escolha o mais provável: não precisa de ` +
     `concordância exata, basta ser a leitura mais natural. O projeto "brain" só vale quando o assunto é este próprio ` +
     `sistema ou as anotações pessoais.\n` +
-    `- "continuar": ele fala com um agente pelo nome, ou claramente dá sequência, corrige ou pergunta sobre o ` +
-    `trabalho que um agente fez ou está fazendo, ou seja, traz uma instrução nova para ele. Ponha o nome em "agente". ` +
+    `- "continuar": a mensagem é para um agente que já está no assunto. Vale quando ele chama o agente pelo nome e ` +
+    `também quando NÃO chama, mas a mensagem só faz sentido como sequência da conversa: usa "ele", "isso", "esse", ` +
+    `"e...?", "também", "agora", pede mais detalhe, corrige ou aprofunda o que um agente acabou de responder ou de ` +
+    `fazer. Nesse caso o agente é quem deu a última resposta sobre aquele assunto no histórico. Ponha o nome em ` +
+    `"agente". Na dúvida entre "continuar" e abrir um pedido novo ("geral" ou "projeto") sobre o mesmo assunto, ` +
+    `prefira "continuar": o agente já tem o contexto. Só abra pedido novo quando o assunto mudar de verdade. ` +
     `Perguntar SOBRE um agente (o que ele está fazendo, se já terminou, quem está livre) não é "continuar": é ` +
     `"resposta", e você responde com o estado da equipe.\n\n` +
     `Além disso, reescreva a mensagem em "texto" corrigindo SÓ os nomes que a transcrição errou (projetos, clientes, ` +
@@ -298,10 +302,13 @@ function montarPrompt(pedido, agente, projeto, continuando) {
   // Continuação na mesma sessão: o agente já tem todo o contexto.
   if (continuando) return `${pedido.texto}${anexos}\n\n---\n${entrega} ${tom}`;
 
+  // Pedido novo também recebe a conversa recente, para o agente não começar no escuro.
+  const { historico } = contextoDaConversa(pedido.id);
+  const conversa = historico ? `\nConversa recente (só para contexto; responda apenas à mensagem acima):\n${historico}\n` : '';
   const quem = `Você é ${agente.nome}, um dos agentes do Brain, o assistente pessoal de ${lerPerfil().nome}. Você está rodando sozinho, sem ninguém acompanhando.`;
   if (!projeto) {
     return (
-      `${pedido.texto}${anexos}\n\n---\n${quem}\n` +
+      `${pedido.texto}${anexos}\n\n---\n${quem}\n${conversa}` +
       `Esta mensagem não é sobre um projeto específico. Regras:\n` +
       `1. Responda ao que foi pedido. Se depender de informação atual ou que você não tem certeza, pesquise na ` +
       `internet antes e cite as fontes em uma linha no final.\n` +
@@ -311,7 +318,7 @@ function montarPrompt(pedido, agente, projeto, continuando) {
     );
   }
   return (
-    `${pedido.texto}${anexos}\n\n---\n${quem} Projeto: "${projeto.nome}" (${projeto.pasta}).\n` +
+    `${pedido.texto}${anexos}\n\n---\n${quem} Projeto: "${projeto.nome}" (${projeto.pasta}).\n${conversa}` +
     `Regras:\n` +
     `1. Antes de mexer, entenda o projeto: leia CLAUDE.md/AGENTS.md/README e os commits recentes (git log).\n` +
     `2. ${regraDePublicacao(pedido, projeto)}\n` +
