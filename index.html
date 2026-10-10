@@ -270,13 +270,42 @@
   .cartaoN span { color:var(--sub); font-size:13px; }
   button.chip { cursor:pointer; font:inherit; font-size:13px; }
   button.chip:hover { border-color:var(--verde); }
+
+  /* ----- visual limpo: sem molduras, sem barras de rolagem aparentes ----- */
+  * { scrollbar-width:thin; scrollbar-color:transparent transparent; }
+  *:hover { scrollbar-color:color-mix(in srgb, var(--sub) 40%, transparent) transparent; }
+  .topo { background:var(--painel); min-height:56px; }
+  .compor, .previa, .respondendo, .erroEnvio, .mesa { background:var(--painel); border:0; }
+  .compor textarea { background:var(--barra); }
+  .chip { border-color:transparent; background:var(--barra); }
+  .chip.vivo { background:color-mix(in srgb, var(--verde) 14%, transparent); border-color:transparent; }
+  .telas { gap:10px; padding:2px 10px 4px; }
+  .tela { border:0; border-radius:18px; }
+  .tela.alvo { box-shadow:0 0 0 2px var(--verde); }
+  .cabecaTela { background:transparent; padding:12px 14px 6px; }
+  .tela.ativa .cabecaTela::after { height:2px; border-radius:2px; opacity:.8; }
+  .tela .rolo { padding:6px 14px 14px; }
+  .cabecaTela .linha1 { gap:10px; }
+  .cabecaTela .nome { flex:none; }
+  .tituloTela { font-weight:600; font-size:15px; color:var(--txt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .cabecaTela .estado { margin-top:2px; }
+  .cabecaTela .estado .tag { flex:none; }
+  .cabecaTela .consumo { opacity:.75; }
+  .cabecaTela .icone { opacity:.45; transition:opacity .15s; }
+  .tela:hover .cabecaTela .icone { opacity:1; }
+  .tabela { border-color:color-mix(in srgb, var(--borda) 60%, transparent); }
+  .avatar.marcaBrain { background:#101010; }
+  .avatar svg.logo { width:58%; height:58%; stroke:none; fill:#fff; }
+  .conversa { background:var(--painel); }
+  .conversa .minha .balao, .conversa .dele .balao { box-shadow:none; }
+  .conversa .dele .balao { background:var(--barra); }
 </style>
 </head>
 <body>
 
 <div class="app" id="app">
   <header class="topo">
-    <div class="avatar" style="background:var(--c-brain)">B</div>
+    <div class="avatar marcaBrain"><svg class="logo" viewBox="0 0 369.45 295.55"><path d="M357.19,67.76L221.67,0v73.89l147.78,73.89v-60.19c0-8.4-4.74-16.07-12.25-19.82Z"/><path d="M357.19,227.79l-135.53,67.76v-73.89s147.78-73.89,147.78-73.89v60.19c0,8.4-4.74,16.07-12.25,19.82Z"/><path d="M12.25,227.79l135.53,67.76v-73.89L0,147.78v60.19C0,216.36,4.74,224.04,12.25,227.79Z"/><path d="M12.25,67.76L147.78,0v73.89S0,147.78,0,147.78v-60.19c0-8.4,4.74-16.07,12.25-19.82Z"/><circle cx="184.72" cy="147.78" r="51.19"/></svg></div>
     <div class="meio marca"><div class="titulo">Brain</div><div class="sub" id="subtitulo">sua equipe</div></div>
     <div class="painel" id="painel"></div>
     <div class="banco" id="banco" title="Agentes sem tela aberta"></div>
@@ -364,7 +393,7 @@
 
 <div class="veu centro" id="login" hidden>
   <form class="janela" onsubmit="entrar(event)">
-    <div class="perfilTopo" style="margin-bottom:14px"><div class="avatar" style="background:var(--c-brain)">B</div><div class="titulo" style="font-weight:600; font-size:18px">Brain</div></div>
+    <div class="perfilTopo" style="margin-bottom:14px"><div class="avatar marcaBrain"><svg class="logo" viewBox="0 0 369.45 295.55"><path d="M357.19,67.76L221.67,0v73.89l147.78,73.89v-60.19c0-8.4-4.74-16.07-12.25-19.82Z"/><path d="M357.19,227.79l-135.53,67.76v-73.89s147.78-73.89,147.78-73.89v60.19c0,8.4-4.74,16.07-12.25,19.82Z"/><path d="M12.25,227.79l135.53,67.76v-73.89L0,147.78v60.19C0,216.36,4.74,224.04,12.25,227.79Z"/><path d="M12.25,67.76L147.78,0v73.89S0,147.78,0,147.78v-60.19c0-8.4,4.74-16.07,12.25-19.82Z"/><circle cx="184.72" cy="147.78" r="51.19"/></svg></div><div class="titulo" style="font-weight:600; font-size:18px">Brain</div></div>
     <label class="campo" style="margin:0">Senha<input id="senha" type="password" autocomplete="current-password"></label>
     <div class="fila"><button class="botao" type="submit">Entrar</button><span class="nao" id="avisoLogin"></span></div>
   </form>
@@ -622,7 +651,9 @@ function grafico(fonte) {
 }
 
 // ----- peças -----
+const MARCA_BRAIN = '<svg class="logo" viewBox="0 0 369.45 295.55"><path d="M357.19,67.76L221.67,0v73.89l147.78,73.89v-60.19c0-8.4-4.74-16.07-12.25-19.82Z"/><path d="M357.19,227.79l-135.53,67.76v-73.89s147.78-73.89,147.78-73.89v60.19c0,8.4-4.74,16.07-12.25,19.82Z"/><path d="M12.25,227.79l135.53,67.76v-73.89L0,147.78v60.19C0,216.36,4.74,224.04,12.25,227.79Z"/><path d="M12.25,67.76L147.78,0v73.89S0,147.78,0,147.78v-60.19c0-8.4,4.74-16.07,12.25-19.82Z"/><circle cx="184.72" cy="147.78" r="51.19"/></svg>';
 function avatar(nome, tamanho = '') {
+  if (nome === 'Brain') return `<div class="avatar marcaBrain ${tamanho}">${MARCA_BRAIN}</div>`;
   const quem = nome === perfil.nome && tamanho.includes('eu') ? 'eu' : slug(nome);
   const versao = fotos[quem];
   const fundo = quem === 'eu' ? 'var(--sub)' : cor(nome);
@@ -832,8 +863,8 @@ function desenharTelas({ grupos, visiveis }, resumo) {
     tela.classList.toggle('alvo', para === d);
     tela.querySelector('.cabecaTela').innerHTML = `${avatar(d)}
       <div class="info" ${d !== 'Brain' ? `data-para="${escapar(d)}"` : ''} title="${d !== 'Brain' ? 'Clique para falar com ' + escapar(d) : ''}">
-        <div class="linha1"><span class="nome" style="color:${cor(d)}">${escapar(d)}</span>${projeto ? `<span class="tag projeto">${escapar(projeto)}</span>` : ''}${(trabalho ?? ultimo)?.motor === 'codex' ? '<span class="tag">Codex</span>' : ''}</div>
-        <div class="estado ${trabalho || esperando ? 'ativo' : ''}">${estado}</div>
+        <div class="linha1"><span class="nome" style="color:${cor(d)}">${escapar(d)}</span>${(trabalho ?? ultimo)?.titulo && d !== 'Brain' ? `<span class="tituloTela">${escapar((trabalho ?? ultimo).titulo)}</span>` : ''}</div>
+        <div class="estado ${trabalho || esperando ? 'ativo' : ''}">${projeto ? `<span class="tag projeto">${escapar(projeto)}</span>` : ''}${(trabalho ?? ultimo)?.motor === 'codex' ? '<span class="tag">Codex</span>' : ''}${estado}</div>
       </div>
       ${consumo ? `<div class="consumo" title="Hoje">${consumo.pedidos} ${consumo.pedidos === 1 ? 'pedido' : 'pedidos'}<br>${compacto(consumo.tokens)} tokens</div>` : ''}
       ${trabalho ? `<button class="icone" data-cancelar="${trabalho.id}" title="Cancelar o que está fazendo">${icone('parar')}</button>` : ''}

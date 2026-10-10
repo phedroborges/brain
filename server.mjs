@@ -268,7 +268,7 @@ async function rotear(pedido, projetos) {
     `Responda SOMENTE com um JSON: {"tipo":"resposta|geral|projeto|continuar","resposta":"<só no tipo resposta>",` +
     `"projeto":"<id ou null>","agente":"<nome ou null>","imagem":<true se ele pede para CRIAR ou EDITAR uma imagem ` +
     `(arte, post, logo, ilustração, foto); false para todo o resto, inclusive analisar uma imagem enviada ou ` +
-    `escrever legenda>,"texto":"<mensagem com os nomes corrigidos>","motivo":"<uma frase>"}. ` +
+    `escrever legenda>,"texto":"<mensagem com os nomes corrigidos>","titulo":"<o que ele quer, em 2 a 5 palavras, sem ponto final; ex.: Ranking no dashboard>","motivo":"<uma frase>"}. ` +
     `Não use ferramentas.`;
   const r = await rodar('claude', ['-p', '--model', MODELO_ROTEADOR, '--output-format', 'json'], {
     cwd: path.join(PEDIDOS, pedido.id),
@@ -535,6 +535,7 @@ async function processar(pedido) {
     } else {
       const escolha = await rotear(pedido, projetos);
       pedido.roteador = { tipo: escolha.tipo, motivo: escolha.motivo };
+      if (typeof escolha.titulo === 'string' && escolha.titulo.trim()) pedido.titulo = curto(escolha.titulo.replace(/[.!]+$/, ''), 48);
       // O agente recebe a mensagem com os nomes corrigidos; o ditado original fica guardado.
       const corrigido = typeof escolha.texto === 'string' ? escolha.texto.trim() : '';
       if (corrigido && corrigido !== pedido.texto && corrigido.length < pedido.texto.length * 1.5 + 40) {
@@ -1276,6 +1277,7 @@ function verPedido(p, projetos) {
     atualizadoEm: p.atualizadoEm,
     status: p.status,
     tipo: p.tipo,
+    titulo: p.titulo || curto(p.texto, 42),
     agente: p.agente,
     motor: p.motor,
     para: p.para,
