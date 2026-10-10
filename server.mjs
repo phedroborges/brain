@@ -182,6 +182,25 @@ function passo(id, texto) {
   atividade.set(id, lista.slice(-40));
 }
 
+// ---------- consumo ----------
+// O que cada chamada ao modelo gastou. O custo é o equivalente no preço da API:
+// como os agentes rodam pela assinatura, ele serve de medida, não é cobrança.
+function usoDoClaude(json) {
+  const u = json?.usage;
+  if (!u) return null;
+  return {
+    entrada: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
+    saida: u.output_tokens ?? 0,
+    cache: u.cache_read_input_tokens ?? 0,
+    custo: json.total_cost_usd ?? 0,
+  };
+}
+function somarUso(pedido, uso) {
+  if (!uso) return;
+  const a = pedido.uso ?? { entrada: 0, saida: 0, cache: 0, custo: 0 };
+  pedido.uso = { entrada: a.entrada + uso.entrada, saida: a.saida + uso.saida, cache: a.cache + uso.cache, custo: a.custo + uso.custo };
+}
+
 // ---------- roteador ----------
 
 const curto = (s, n) => {
@@ -263,7 +282,9 @@ async function rotear(pedido, projetos) {
     } catch {}
     throw new Error(`O Claude não conseguiu ler a mensagem: ${(motivo || r.erro || r.saida).trim().slice(0, 400)}`);
   }
-  const texto = JSON.parse(r.saida).result ?? '';
+  const resposta = JSON.parse(r.saida);
+  somarUso(pedido, usoDoClaude(resposta));
+  const texto = resposta.result ?? '';
   const achado = texto.match(/\{[\s\S]*\}/);
   if (!achado) throw new Error('o roteador não devolveu JSON: ' + texto.slice(0, 200));
   return JSON.parse(achado[0]);
@@ -414,7 +435,7 @@ function leitorClaude(id) {
         if (b.type === 'tool_use') passo(id, descreverFerramenta(b.name, b.input));
       }
     } else if (ev.type === 'result') {
-      final = { texto: ev.result ?? '', erro: !!ev.is_error };
+      final = { texto: ev.result ?? '', erro: !!ev.is_error, uso: usoDoClaude(ev) };
     }
   };
   return {
@@ -446,7 +467,14 @@ async function executar(pedido, agente, projeto, pasta, continuando) {
       { cwd: pasta, entrada: antes + montarPrompt(pedido, agente, projeto, false), aoLer: (t, f) => (t ? log(pedido.id, t) : registrar(t, f)) },
     );
     if (r.erro.trim()) log(pedido.id, r.erro);
-    return { texto: fs.existsSync(ultima) ? fs.readFileSync(ultima, 'utf8') : '', erro: r.codigo !== 0, codigo: r.codigo, sessao: null };
+    const total = Number(((r.saida + r.erro).match(/tokens used[:\s]*([\d.,]+)/i)?.[1] ?? '').replace(/[.,]/g, '')) || 0;
+    return {
+      texto: fs.existsSync(ultima) ? fs.readFileSync(ultima, 'utf8') : '',
+      erro: r.codigo !== 0,
+      codigo: r.codigo,
+      sessao: null,
+      uso: total ? { entrada: total, saida: 0, cache: 0, custo: 0 } : null,
+    };
   }
 
   const tentar = async (retomar) => {
@@ -462,7 +490,7 @@ async function executar(pedido, agente, projeto, pasta, continuando) {
     });
     const { final, sessao } = leitor.fim();
     if (r.erro.trim()) log(pedido.id, r.erro);
-    return { texto: final?.texto ?? '', erro: r.codigo !== 0 || !!final?.erro, codigo: r.codigo, sessao };
+    return { texto: final?.texto ?? '', erro: r.codigo !== 0 || !!final?.erro, codigo: r.codigo, sessao, uso: final?.uso ?? null };
   };
 
   let r = await tentar(continuando && !!agente.sessao);
@@ -633,6 +661,7 @@ async function trabalhar(pedido, agente) {
 
     if (carregar(pedido.id)?.status === 'cancelado') return;
     pedido.resultado = r.texto;
+    somarUso(pedido, r.uso);
     pedido.entregas = entregas;
     pedido.status = r.erro ? 'erro' : 'concluido';
     if (r.erro) pedido.erro = r.texto ? 'O agente terminou com erro.' : `O agente terminou com erro (código ${r.codigo}) e sem resposta. Veja o log.`;
@@ -1257,6 +1286,7 @@ function verPedido(p, projetos) {
     erro: p.erro,
     entregas: p.entregas ?? [],
     passos: atividade.get(p.id)?.slice(-6) ?? [],
+    uso: p.uso ?? null,
   };
 }
 
@@ -1309,8 +1339,24 @@ const servidor = http.createServer(async (req, res) => {
 
     if (rota === 'GET /api/conversa') {
       const projetos = lerProjetos();
+      const todos = listar();
+      // Resumo de hoje (no fuso do servidor): total e por agente.
+      const hoje = new Date().toDateString();
+      const resumo = { pedidos: 0, tokens: 0, custo: 0, porAgente: {} };
+      for (const p of todos) {
+        if (new Date(p.criadoEm).toDateString() !== hoje) break; // a lista vem do mais novo para o mais antigo
+        const tokens = (p.uso?.entrada ?? 0) + (p.uso?.saida ?? 0);
+        resumo.pedidos++;
+        resumo.tokens += tokens;
+        resumo.custo += p.uso?.custo ?? 0;
+        const quem = p.agente || 'Brain';
+        const a = (resumo.porAgente[quem] ??= { pedidos: 0, tokens: 0 });
+        a.pedidos++;
+        a.tokens += tokens;
+      }
       return responder(res, 200, {
-        pedidos: listar().slice(0, 80).reverse().map((p) => verPedido(p, projetos)),
+        resumo: { ...resumo, fila: fila.length },
+        pedidos: todos.slice(0, 120).reverse().map((p) => verPedido(p, projetos)),
         agentes: [...agentes.values()].map((a) => ({
           nome: a.nome,
           ocupado: a.ocupado,

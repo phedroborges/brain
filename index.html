@@ -206,32 +206,81 @@
     .dele > .avatar { display:none; }
     .gaveta { width:100%; }
   }
+
+  /* ----- telas: uma por agente em uso, um campo de mensagem só ----- */
+  .app { display:flex; flex-direction:column; max-width:none; height:100dvh; background:var(--painel); }
+  .principal { flex:1; background:var(--painel); }
+  .topo { gap:14px; }
+  .topo .marca { flex:none; }
+  .painel { flex:1; min-width:0; display:flex; gap:8px; align-items:center; overflow:hidden; }
+  .chip { background:var(--entrada); border:1px solid var(--borda); border-radius:99px; padding:4px 12px; font-size:13px; color:var(--sub); white-space:nowrap; }
+  .chip b { color:var(--txt); font-weight:600; }
+  .chip.vivo { border-color:var(--verde); color:var(--verde); } .chip.vivo b { color:var(--verde); }
+  .banco { display:flex; gap:4px; align-items:center; flex:none; }
+  .banco .avatar { width:30px; height:30px; font-size:12px; cursor:pointer; opacity:.55; transition:opacity .15s, transform .15s; }
+  .banco .avatar:hover { opacity:1; transform:scale(1.12); }
+  .segmentos.mini { flex:none; padding:2px; border-radius:9px; }
+  .segmentos.mini button { padding:5px 12px; font-size:13px; border-radius:7px; }
+  .topo .eu { background:none; border:0; padding:4px; border-radius:99px; display:flex; gap:6px; align-items:center; color:var(--sub); flex:none; }
+  .topo .eu:hover { background:var(--realce); }
+  .topo .eu .avatar { width:32px; height:32px; font-size:13px; }
+
+  .telas { flex:1; min-height:0; display:grid; gap:8px; padding:8px; grid-auto-rows:minmax(220px, 1fr); overflow-y:auto; }
+  .telas > .vazio { align-self:center; justify-self:center; }
+  .tela { display:flex; flex-direction:column; min-height:0; min-width:0; background:var(--fundo); border:1px solid var(--borda); border-radius:12px; overflow:hidden; }
+  .tela.alvo { border-color:var(--verde); box-shadow:0 0 0 1px var(--verde); }
+  .cabecaTela { display:flex; gap:10px; align-items:center; padding:8px 10px; background:var(--barra); cursor:pointer; flex:none; position:relative; }
+  .cabecaTela .info { flex:1; min-width:0; }
+  .cabecaTela .linha1 { display:flex; gap:8px; align-items:center; min-width:0; }
+  .cabecaTela .linha1 .tag { overflow:hidden; text-overflow:ellipsis; }
+  .cabecaTela .estado { font-size:12.5px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; gap:6px; align-items:center; }
+  .cabecaTela .estado.ativo { color:var(--verde); }
+  .cabecaTela .consumo { font-size:12px; color:var(--sub); white-space:nowrap; flex:none; text-align:right; line-height:1.3; }
+  .cabecaTela .icone { width:30px; height:30px; }
+  .cabecaTela .icone svg { width:17px; height:17px; }
+  .tela.ativa .cabecaTela::after { content:""; position:absolute; left:0; bottom:0; height:2px; width:40%; background:var(--verde); animation:corre 1.6s ease-in-out infinite; }
+  @keyframes corre { 0% { left:-40%; } 100% { left:100%; } }
+  .tela .rolo { flex:1; overflow-y:auto; padding:10px 12px; display:flex; flex-direction:column; gap:3px; overscroll-behavior:contain; }
+  .tela .rolo > .vazio { margin:auto; font-size:14px; }
+  .tela .balao { max-width:min(92%, 760px); }
+  .tela .balao:has(.tabela, .grafico) { max-width:min(100%, 900px); width:min(100%, 900px); }
+  .tela .dele > .avatar { display:none; }
+  .consumoMsg { font-size:11px; color:var(--sub); }
+
+  /* o campo de mensagem fica centralizado em telas largas */
+  .compor, .previa, .respondendo, .erroEnvio { padding-left:max(10px, calc((100% - 1100px) / 2)); padding-right:max(10px, calc((100% - 1100px) / 2)); }
+  .respondendo { border-left:0; }
+  .respondendo span { border-left:4px solid var(--verde); padding-left:10px; }
+  .conversa { padding-left:max(10px, calc((100% - 1000px) / 2)); padding-right:max(10px, calc((100% - 1000px) / 2)); background:var(--fundo); }
+  .mesa { padding-left:max(10px, calc((100% - 1100px) / 2)); padding-right:max(10px, calc((100% - 1100px) / 2)); }
+
+  /* celular: sempre a conversa única */
+  @media (max-width:860px) {
+    .banco, #modo { display:none; }
+    .painel { display:none; }
+    .topo .marca { flex:1; min-width:0; }
+    .topo { gap:10px; }
+  }
 </style>
 </head>
 <body>
 
 <div class="app" id="app">
-  <aside class="lateral">
-    <div class="topo"><div class="avatar" style="background:var(--c-brain)">B</div><div class="meio"><div class="titulo">Brain</div><div class="sub">sua equipe</div></div></div>
-    <div class="equipe" id="equipe"></div>
-    <div class="eu" id="abrirConfigLateral" title="Configurações"><span id="meuAvatarLateral"></span><div class="meio" style="flex:1; min-width:0"><div class="titulo" id="meuNomeLateral">Você</div><div class="sub" style="color:var(--sub); font-size:13px">Configurações</div></div><span style="color:var(--sub)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span></div>
-  </aside>
+  <header class="topo">
+    <div class="avatar" style="background:var(--c-brain)">B</div>
+    <div class="meio marca"><div class="titulo">Brain</div><div class="sub" id="subtitulo">sua equipe</div></div>
+    <div class="painel" id="painel"></div>
+    <div class="banco" id="banco" title="Agentes sem tela aberta"></div>
+    <div class="segmentos mini" id="modo"><button data-modo="telas" title="Uma tela por agente em uso">Telas</button><button data-modo="conversa" title="Tudo em uma conversa só">Conversa</button></div>
+    <button class="eu" id="abrirConfig" title="Configurações"><span id="meuAvatarTopo"></span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
 
   <section class="principal" id="principal">
-    <header class="topo">
-      <div class="avatar soCelular" style="background:var(--c-brain)">B</div>
-      <div class="meio">
-        <div class="titulo">Brain</div>
-        <div class="sub" id="subtitulo">Junior, Trixie, Flocos, Ágato, Guará, Marsha, Dino, Paçoca</div>
-      </div>
-      <button class="icone soCelular" id="abrirConfig" title="Configurações"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg></button>
-    </header>
-
-    <main class="conversa" id="conversa"><div class="vazio">Mande uma mensagem. Pode ser uma pergunta qualquer ou um pedido para um dos seus projetos.</div></main>
-
+    <main class="telas" id="telas"></main>
+    <main class="conversa" id="conversa" hidden><div class="vazio">Mande uma mensagem. Pode ser uma pergunta qualquer ou um pedido para um dos seus projetos.</div></main>
     <section class="mesa" id="mesa" hidden></section>
 
-    <div class="respondendo" id="respondendo" hidden><span>Falando com <b id="respondendoNome"></b></span><button class="x" id="cancelarResposta" title="Cancelar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="respondendo" id="respondendo" hidden><span>Falando com <b id="respondendoNome"></b></span><button class="x" id="cancelarResposta" title="Voltar para automático"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="previa" id="previa" hidden></div>
     <div class="erroEnvio" id="aviso"></div>
     <footer class="compor">
@@ -323,6 +372,8 @@ const ICONES = {
   copiar: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
   feito: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  ampliar: '<path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/>',
+  reduzir: '<path d="M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5"/>',
 };
 const icone = (nome) => `<svg viewBox="0 0 24 24">${ICONES[nome]}</svg>`;
 
@@ -616,42 +667,179 @@ function baloes(p) {
         ${p.motor === 'codex' ? '<span class="tag">Codex</span>' : ''}
         ${p.origem === 'whatsapp' ? '<span class="tag">WhatsApp</span>' : ''}</div>
       ${corpo}
-      ${andando ? '' : `<span class="rodape">${hora(p.atualizadoEm || p.criadoEm)}</span>`}
+      ${andando ? '' : `<span class="rodape">${tokensDe(p) ? `<span class="consumoMsg">${compacto(tokensDe(p))} tokens ·</span>` : ''}${hora(p.atualizadoEm || p.criadoEm)}</span>`}
       ${acoes.length ? `<div class="acoes">${acoes.join('')}</div>` : ''}
       ${logsAbertos.has(p.id) ? `<div class="log">${escapar(logsAbertos.get(p.id)) || 'sem detalhes ainda'}</div>` : ''}
     </div></div>`;
   return minha + dele;
 }
 
-// ----- conversa: só redesenha o pedido que mudou -----
+// ----- telas e conversa: só redesenha o pedido que mudou -----
+// Modo "telas": cada agente em uso ganha a sua tela, com a conversa dele; as
+// telas aparecem conforme os agentes entram em uso e o campo de mensagem é um só.
+// Modo "conversa" (e sempre no celular): tudo numa linha do tempo única.
+let modo = localStorage.getItem('modo') || 'telas';
+let modoDesenhado = null;
 let diaAnterior = '';
 let assinaturaFotos = '';
-function desenhar({ pedidos, agentes }) {
-  // foto nova de um agente: redesenha tudo uma vez
+let telaCheia = null;
+let ultimosDados = null;
+const telasAbertas = new Set();   // abertas na mão, pelo banco
+const telasFechadas = new Map();  // dono -> quando fechei (volta sozinha se houver atividade depois)
+const TELA_RECENTE_MS = 3 * 60 * 60 * 1000;
+const ORDEM = ['Brain', ...NOMES];
+
+const modoAtual = () => (innerWidth < 860 ? 'conversa' : modo);
+const dono = (p) => p.agente || p.para || 'Brain';
+const tokensDe = (p) => (p.uso ? p.uso.entrada + p.uso.saida : 0);
+const compacto = (n) => (n >= 1e6 ? (n / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : n >= 1000 ? (n / 1000).toLocaleString('pt-BR', { maximumFractionDigits: n >= 1e5 ? 0 : 1 }) + ' mil' : String(n));
+const duracao = (desde) => { const s = Math.max(0, Math.round((Date.now() - new Date(desde)) / 1000)); return s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min` : s >= 60 ? `${Math.floor(s / 60)} min` : `${s} s`; };
+
+// Põe (ou atualiza) os balões de um pedido dentro de uma área; devolve true se mexeu.
+function porPedido(area, p) {
+  const assinatura = JSON.stringify(p) + (logsAbertos.get(p.id)?.length ?? '');
+  let bloco = document.getElementById('p-' + p.id);
+  if (bloco && bloco.parentElement === area && desenhados.get(p.id) === assinatura) return false;
+  if (!bloco) { bloco = document.createElement('div'); bloco.id = 'p-' + p.id; bloco.style.display = 'contents'; }
+  if (bloco.parentElement !== area) area.appendChild(bloco); // mudou de tela (ex.: saiu do Brain e foi para o agente)
+  if (desenhados.get(p.id) !== assinatura) { bloco.innerHTML = baloes(p); desenhados.set(p.id, assinatura); }
+  return true;
+}
+
+function desenhar(dados) {
+  ultimosDados = dados;
+  const { pedidos, agentes, resumo } = dados;
   for (const a of agentes) fotos[slug(a.nome)] = a.foto;
   const novaAssinatura = JSON.stringify(fotos);
   if (novaAssinatura !== assinaturaFotos) { assinaturaFotos = novaAssinatura; desenhados.clear(); desenharConfig(); }
+  pedidosPorId = new Map(pedidos.map((p) => [p.id, p]));
 
+  // trocou de modo (ou de largura de tela): recomeça a área do zero
+  const atual = modoAtual();
+  if (atual !== modoDesenhado) {
+    modoDesenhado = atual;
+    desenhados.clear(); diaAnterior = '';
+    $('telas').innerHTML = '';
+    $('conversa').innerHTML = '<div class="vazio">Mande uma mensagem. Pode ser uma pergunta qualquer ou um pedido para um dos seus projetos.</div>';
+    $('telas').hidden = atual !== 'telas';
+    $('conversa').hidden = atual !== 'conversa';
+    for (const b of $('modo').children) b.classList.toggle('sel', b.dataset.modo === modo);
+  }
+  if (atual === 'telas') desenharTelas(pedidos, agentes, resumo); else desenharConversa(pedidos);
+  desenharPainel(pedidos, agentes, resumo);
+}
+
+function desenharPainel(pedidos, agentes, resumo) {
+  const ocupados = agentes.filter((a) => a.ocupado);
+  const chips = [];
+  chips.push(`<span class="chip ${ocupados.length ? 'vivo' : ''}"><b>${ocupados.length}</b> trabalhando</span>`);
+  if (resumo?.fila) chips.push(`<span class="chip"><b>${resumo.fila}</b> na fila</span>`);
+  if (resumo) {
+    chips.push(`<span class="chip">hoje <b>${resumo.pedidos}</b> ${resumo.pedidos === 1 ? 'pedido' : 'pedidos'}</span>`);
+    chips.push(`<span class="chip" title="Entrada + saída, sem contar leitura de cache. Você usa a assinatura; no preço da API isso equivaleria a US$ ${resumo.custo.toFixed(2)}."><b>${compacto(resumo.tokens)}</b> tokens</span>`);
+  }
+  $('painel').innerHTML = chips.join('');
+  $('subtitulo').textContent = ocupados.length ? `${ocupados.map((a) => a.nome).join(', ')} trabalhando` : 'sua equipe';
+}
+
+// ----- modo telas -----
+function desenharTelas(pedidos, agentes, resumo) {
+  const grupos = new Map();
+  for (const p of pedidos) { const d = dono(p); if (!grupos.has(d)) grupos.set(d, []); grupos.get(d).push(p); }
+  const agora = Date.now();
+  const ultimaAtividade = (d) => { const u = grupos.get(d)?.at(-1); return u ? new Date(u.atualizadoEm || u.criadoEm).getTime() : 0; };
+  const ocupadoPor = (d) => (grupos.get(d) ?? []).some((p) => EM_ANDAMENTO.includes(p.status));
+
+  // Uma tela aparece quando o agente está trabalhando, teve atividade recente ou foi aberta na mão.
+  let visiveis = ORDEM.filter((d) => {
+    if (ocupadoPor(d)) return true;
+    if (telasAbertas.has(d)) return true;
+    const quando = ultimaAtividade(d);
+    if (!quando || (telasFechadas.get(d) ?? 0) >= quando) return false;
+    return agora - quando < TELA_RECENTE_MS;
+  });
+  if (telaCheia && visiveis.includes(telaCheia)) visiveis = [telaCheia]; else telaCheia = null;
+
+  const area = $('telas');
+  const n = visiveis.length;
+  const colunas = n <= 1 ? 1 : n === 2 ? 2 : n === 3 ? 3 : n === 4 ? 2 : n <= 6 ? 3 : n <= 8 ? 4 : 3;
+  area.style.gridTemplateColumns = `repeat(${Math.min(colunas, innerWidth < 1250 ? 2 : colunas)}, minmax(0, 1fr))`;
+
+  area.querySelector(':scope > .vazio')?.remove();
+  if (!n) area.innerHTML = '<div class="vazio">Mande uma mensagem. As telas aparecem conforme os agentes entram em uso.</div>';
+
+  // tira as telas que saíram
+  for (const t of [...area.querySelectorAll('.tela')]) {
+    if (visiveis.includes(t.dataset.dono)) continue;
+    for (const b of t.querySelectorAll('[id^="p-"]')) desenhados.delete(b.id.slice(2));
+    t.remove();
+  }
+
+  let anterior = null;
+  for (const d of visiveis) {
+    let tela = document.getElementById('tela-' + slug(d));
+    if (!tela) {
+      tela = document.createElement('section');
+      tela.className = 'tela'; tela.id = 'tela-' + slug(d); tela.dataset.dono = d;
+      tela.innerHTML = '<div class="cabecaTela"></div><div class="rolo"></div>';
+    }
+    // mantém a ordem fixa (Brain, depois os agentes), sem mexer no que já está no lugar
+    const lugar = anterior ? anterior.nextElementSibling : area.firstElementChild;
+    if (lugar !== tela) area.insertBefore(tela, lugar);
+    anterior = tela;
+
+    const lista = grupos.get(d) ?? [];
+    const trabalho = lista.findLast((p) => p.status === 'executando');
+    const esperando = lista.some((p) => ['recebido', 'roteando', 'na_fila'].includes(p.status));
+    const ultimo = lista.at(-1);
+    const projeto = (trabalho ?? ultimo)?.projetoNome;
+    const consumo = resumo?.porAgente?.[d];
+    const estado = trabalho
+      ? `<span class="girando"></span><span style="overflow:hidden; text-overflow:ellipsis">${escapar(trabalho.passos.at(-1) || 'começando')}</span><span>· ${duracao(trabalho.iniciadoEm || trabalho.criadoEm)}</span>`
+      : esperando ? (d === 'Brain' ? 'lendo a mensagem…' : 'na fila…')
+      : ultimo ? `livre · última resposta às ${hora(ultimo.atualizadoEm || ultimo.criadoEm)}` : 'livre · sem conversa ainda';
+    tela.classList.toggle('ativa', !!trabalho || esperando);
+    tela.classList.toggle('alvo', para === d);
+    tela.querySelector('.cabecaTela').innerHTML = `${avatar(d)}
+      <div class="info" ${d !== 'Brain' ? `data-para="${escapar(d)}"` : ''} title="${d !== 'Brain' ? 'Clique para falar com ' + escapar(d) : ''}">
+        <div class="linha1"><span class="nome" style="color:${cor(d)}">${escapar(d)}</span>${projeto ? `<span class="tag projeto">${escapar(projeto)}</span>` : ''}${(trabalho ?? ultimo)?.motor === 'codex' ? '<span class="tag">Codex</span>' : ''}</div>
+        <div class="estado ${trabalho || esperando ? 'ativo' : ''}">${estado}</div>
+      </div>
+      ${consumo ? `<div class="consumo" title="Hoje">${consumo.pedidos} ${consumo.pedidos === 1 ? 'pedido' : 'pedidos'}<br>${compacto(consumo.tokens)} tokens</div>` : ''}
+      ${trabalho ? `<button class="icone" data-cancelar="${trabalho.id}" title="Cancelar o que está fazendo">${icone('parar')}</button>` : ''}
+      ${n > 1 || telaCheia ? `<button class="icone" data-tela-cheia="${escapar(d)}" title="${telaCheia ? 'Voltar a ver todas' : 'Ver só esta tela'}">${icone(telaCheia ? 'reduzir' : 'ampliar')}</button>` : ''}
+      ${trabalho || esperando ? '' : `<button class="icone" data-fechar-tela="${escapar(d)}" title="Fechar esta tela">${icone('x')}</button>`}`;
+
+    const rolo = tela.querySelector('.rolo');
+    const noFim = rolo.scrollTop + rolo.clientHeight >= rolo.scrollHeight - 80;
+    rolo.querySelector(':scope > .vazio')?.remove();
+    let mexeu = false;
+    for (const p of lista) mexeu = porPedido(rolo, p) || mexeu;
+    if (!lista.length) rolo.innerHTML = `<div class="vazio">Clique no nome para falar com ${escapar(d)}.</div>`;
+    if (mexeu && noFim) rolo.scrollTop = rolo.scrollHeight;
+  }
+
+  // o banco: agentes sem tela, para abrir com um clique
+  $('banco').innerHTML = NOMES.filter((d) => !visiveis.includes(d) && !telaCheia)
+    .map((d) => `<span data-abrir-tela="${escapar(d)}" title="${escapar(d)}: abrir a tela">${avatar(d)}</span>`).join('');
+  $('mesa').hidden = true;
+}
+
+// ----- modo conversa (linha do tempo única) -----
+function desenharConversa(pedidos) {
   const area = $('conversa');
   const noFim = area.scrollTop + area.clientHeight >= area.scrollHeight - 80;
   if (pedidos.length) area.querySelector('.vazio')?.remove();
-  pedidosPorId = new Map(pedidos.map((p) => [p.id, p]));
   for (const p of pedidos) {
-    const assinatura = JSON.stringify(p) + (logsAbertos.get(p.id)?.length ?? '');
-    if (desenhados.get(p.id) === assinatura) continue;
-    let bloco = document.getElementById('p-' + p.id);
-    if (!bloco) {
+    if (!document.getElementById('p-' + p.id)) {
       const dia = nomeDoDia(new Date(p.criadoEm));
       if (dia !== diaAnterior) {
         const d = document.createElement('div'); d.className = 'dia';
         d.textContent = dia === nomeDoDia(new Date()) ? 'Hoje' : dia;
         area.appendChild(d); diaAnterior = dia;
       }
-      bloco = document.createElement('div'); bloco.id = 'p-' + p.id; bloco.style.display = 'contents';
-      area.appendChild(bloco);
     }
-    bloco.innerHTML = baloes(p);
-    desenhados.set(p.id, assinatura);
+    porPedido(area, p);
   }
   if (noFim) area.scrollTop = area.scrollHeight;
 
@@ -660,33 +848,35 @@ function desenhar({ pedidos, agentes }) {
   const mesa = $('mesa');
   mesa.hidden = !ativos.length;
   mesa.style.gridTemplateColumns = `repeat(${Math.min(ativos.length, 4)}, minmax(0, 1fr))`;
-  mesa.innerHTML = ativos.map((p) => {
-    const seg = Math.max(0, Math.round((Date.now() - new Date(p.iniciadoEm || p.criadoEm)) / 1000));
-    return `<div class="cartao" data-ir="${p.id}">
+  mesa.innerHTML = ativos.map((p) => `<div class="cartao" data-ir="${p.id}">
       <div class="cabeca">${avatar(p.agente, 'p')}<span class="nome" style="color:${cor(p.agente)}">${escapar(p.agente)}</span>
         ${p.projetoNome ? `<span class="tag projeto" style="overflow:hidden; text-overflow:ellipsis">${escapar(p.projetoNome)}</span>` : ''}
-        <span class="tempo">${seg >= 60 ? Math.floor(seg / 60) + ' min' : seg + ' s'}</span>
+        <span class="tempo">${duracao(p.iniciadoEm || p.criadoEm)}</span>
         <button class="x" data-cancelar="${p.id}" title="Cancelar">${icone('x')}</button></div>
-      <div class="fazendo">${escapar(p.passos[p.passos.length - 1] || 'começando')}</div></div>`;
-  }).join('');
-
-  // a equipe (lateral, no computador)
-  $('equipe').innerHTML = agentes.map((a) => {
-    const trabalho = a.ocupado && pedidosPorId.get(a.ocupado);
-    const estado = a.ocupado
-      ? `${a.projetoNome ? escapar(a.projetoNome) + ' · ' : ''}${escapar(trabalho?.passos.at(-1) || 'trabalhando')}`
-      : a.temSessao ? `livre · último: ${escapar(a.resumo || a.projetoNome || '')}` : 'livre';
-    return `<div class="membro" data-para="${escapar(a.nome)}">${avatar(a.nome)}<div class="info">
-      <div class="nome" style="color:${cor(a.nome)}">${escapar(a.nome)}</div>
-      <div class="estado ${a.ocupado ? 'ativo' : ''}">${estado}</div></div></div>`;
-  }).join('');
-
-  const ocupados = agentes.filter((a) => a.ocupado).map((a) => a.nome);
-  $('subtitulo').textContent = ocupados.length ? `${ocupados.join(', ')} trabalhando` : agentes.map((a) => a.nome).join(', ');
+      <div class="fazendo">${escapar(p.passos[p.passos.length - 1] || 'começando')}</div></div>`).join('');
+  $('banco').innerHTML = '';
 }
 
+function redesenhar() { if (ultimosDados) desenhar(ultimosDados); }
 async function atualizar() {
   try { desenhar(await api('/api/conversa')); } catch {}
+}
+addEventListener('resize', redesenhar);
+$('modo').onclick = (e) => {
+  if (!e.target.dataset.modo) return;
+  modo = e.target.dataset.modo; localStorage.setItem('modo', modo); telaCheia = null;
+  redesenhar();
+  const area = $(modoAtual() === 'telas' ? 'telas' : 'conversa'); area.scrollTop = area.scrollHeight;
+  document.querySelectorAll('.tela .rolo').forEach((r) => (r.scrollTop = r.scrollHeight));
+};
+
+// escolhe (ou solta) o agente que vai receber a próxima mensagem
+function falarCom(nome) {
+  para = para === nome ? null : nome;
+  $('respondendo').hidden = !para;
+  if (para) { $('respondendoNome').textContent = para; $('respondendoNome').style.color = cor(para); }
+  redesenhar();
+  $('texto').focus();
 }
 
 // ----- copiar uma resposta em um clique -----
@@ -700,7 +890,7 @@ async function copiar(texto) {
 
 // ----- cliques na conversa, na mesa e na equipe -----
 async function clicar(e) {
-  const alvo = e.target.closest('[data-cancelar],[data-copiar],[data-para],[data-log],[data-foto],[data-ir]');
+  const alvo = e.target.closest('[data-cancelar],[data-copiar],[data-para],[data-log],[data-foto],[data-ir],[data-tela-cheia],[data-fechar-tela],[data-abrir-tela]');
   const d = alvo?.dataset;
   if (!d) return;
   if (d.cancelar) { await api(`/api/pedidos/${d.cancelar}/cancelar`, {}).catch((x) => ($('aviso').textContent = x.message)); return atualizar(); }
@@ -709,7 +899,10 @@ async function clicar(e) {
     alvo.innerHTML = icone('feito') + 'copiado';
     return setTimeout(() => { alvo.innerHTML = icone('copiar') + 'copiar'; }, 1600);
   }
-  if (d.para) { para = d.para; $('respondendoNome').textContent = para; $('respondendoNome').style.color = cor(para); $('respondendo').hidden = false; return $('texto').focus(); }
+  if (d.para) return falarCom(d.para);
+  if (d.telaCheia) { telaCheia = telaCheia ? null : d.telaCheia; return redesenhar(); }
+  if (d.fecharTela) { telasAbertas.delete(d.fecharTela); telasFechadas.set(d.fecharTela, Date.now()); if (para === d.fecharTela) falarCom(para); return redesenhar(); }
+  if (d.abrirTela) { telasAbertas.add(d.abrirTela); telasFechadas.delete(d.abrirTela); if (para !== d.abrirTela) falarCom(d.abrirTela); return redesenhar(); }
   if (d.log) {
     if (logsAbertos.has(d.log)) logsAbertos.delete(d.log);
     else logsAbertos.set(d.log, (await api('/api/pedidos/' + d.log).catch(() => ({ log:'' }))).log);
@@ -720,9 +913,10 @@ async function clicar(e) {
 }
 $('conversa').onclick = clicar;
 $('mesa').onclick = clicar;
-$('equipe').onclick = clicar;
+$('telas').onclick = clicar;
+$('banco').onclick = clicar;
 $('foto').onclick = () => ($('foto').hidden = true);
-$('cancelarResposta').onclick = () => { para = null; $('respondendo').hidden = true; };
+$('cancelarResposta').onclick = () => { if (para) falarCom(para); };
 
 // ----- anexos: clipe, colar da área de transferência e arrastar -----
 $('anexar').onclick = () => $('arquivo').click();
@@ -856,9 +1050,11 @@ async function enviar() {
     const anexos = await Promise.all(arquivos.map(async (f) => ({ nome: f.name, base64: await emBase64(f) })));
     await api('/api/pedidos', { texto: $('texto').value, motor: $('motor').value, projeto: $('projeto').value, para, anexos });
     $('texto').value = ''; arquivos = []; mostrarPrevia(); ajustarAltura();
-    para = null; $('respondendo').hidden = true; $('projeto').value = 'auto';
+    if (para) falarCom(para);
+    $('projeto').value = 'auto';
     await atualizar();
     $('conversa').scrollTop = $('conversa').scrollHeight;
+  document.querySelectorAll('.tela .rolo').forEach((r) => (r.scrollTop = r.scrollHeight));
   } catch (e) { $('aviso').textContent = e.message; }
   enviando = false;
 }
@@ -866,8 +1062,7 @@ async function enviar() {
 // ----- configurações -----
 function desenharConfig() {
   $('meuAvatarConfig').innerHTML = avatar(perfil.nome, 'g eu');
-  $('meuAvatarLateral').innerHTML = avatar(perfil.nome, 'eu');
-  $('meuNomeLateral').textContent = perfil.nome;
+  $('meuAvatarTopo').innerHTML = avatar(perfil.nome, 'eu');
   $('gradeAgentes').innerHTML = NOMES.map((n) => `<div class="um">
       <div class="trocarFoto" data-foto-de="${slug(n)}" tabindex="0" title="Trocar a foto de ${escapar(n)}">${avatar(n)}</div>
       <div style="color:${cor(n)}; font-weight:600">${escapar(n)}</div>
@@ -875,7 +1070,6 @@ function desenharConfig() {
 }
 function abrirConfig() { $('config').hidden = false; $('meuNome').value = perfil.nome; desenharConfig(); atualizarConexoes(); atualizarWhatsapp(); }
 $('abrirConfig').onclick = abrirConfig;
-$('abrirConfigLateral').onclick = abrirConfig;
 $('fecharConfig').onclick = () => ($('config').hidden = true);
 $('config').onclick = (e) => { if (e.target === $('config')) $('config').hidden = true; };
 
@@ -1010,6 +1204,7 @@ async function iniciar() {
   desenharConfig();
   await atualizar();
   $('conversa').scrollTop = $('conversa').scrollHeight;
+  document.querySelectorAll('.tela .rolo').forEach((r) => (r.scrollTop = r.scrollHeight));
   if (location.hash === '#config') abrirConfig(); // link direto para as configurações
 }
 iniciar();
