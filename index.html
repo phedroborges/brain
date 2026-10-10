@@ -93,6 +93,7 @@ async function entrar(e) {
   try {
     await api('/api/login', { senha: $('senha').value });
     $('login').hidden = true; $('senha').value = '';
+    carregarConfig();
     carregarProjetos().then(atualizar).then(atualizarConexoes);
   } catch (x) { $('avisoLogin').textContent = x.message; }
 }
@@ -114,26 +115,92 @@ $('anexos').onclick = (e) => { if (e.target.dataset.i) { e.preventDefault(); arq
 const emBase64 = (f) => new Promise((ok, falha) => { const l = new FileReader(); l.onload = () => ok(l.result.split(',')[1]); l.onerror = falha; l.readAsDataURL(f); });
 
 // ----- ditado -----
+// Com OPENAI_API_KEY no servidor: grava o áudio e transcreve lá, atualizando o
+// texto enquanto você fala (funciona igual em PC, Android e iPhone). Sem a
+// chave: usa o reconhecimento de voz do navegador, quando existir.
 const Reconhecimento = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null;
-if (!Reconhecimento) { $('mic').disabled = true; $('mic').title = 'Ditado indisponível neste navegador (use o Chrome)'; }
-$('mic').onclick = () => {
-  if (rec) return rec.stop();
+let transcricaoNoServidor = false;
+let rec = null;        // reconhecimento do navegador em andamento
+let gravador = null;   // gravação em andamento
+let pararGravacao = null;
+
+const botaoMic = (gravando, texto) => { $('mic').classList.toggle('gravando', gravando); $('mic').textContent = texto; };
+
+const carregarConfig = () => api('/api/config').then((c) => {
+  transcricaoNoServidor = c.transcricao && !!navigator.mediaDevices?.getUserMedia && !!window.MediaRecorder;
+  if (!transcricaoNoServidor && !Reconhecimento) { $('mic').disabled = true; $('mic').title = 'Ditado indisponível neste navegador'; }
+}).catch(() => {});
+carregarConfig();
+
+async function gravar() {
+  const fluxo = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const tipo = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+  const base = $('texto').value ? $('texto').value.trimEnd() + ' ' : '';
+  const pedacos = [];
+  let seq = 0, aplicado = 0, emCurso = false;
+
+  // Transcreve tudo que foi gravado até agora; a resposta mais nova sempre vence.
+  const transcrever = async (final) => {
+    if (!pedacos.length || (emCurso && !final)) return;
+    const meu = ++seq;
+    emCurso = true;
+    try {
+      const audio = new Blob(pedacos, { type: gravador.mimeType || tipo });
+      const { texto } = await api('/api/transcrever', { audio: await emBase64(audio), tipo: audio.type });
+      if (meu > aplicado) { aplicado = meu; $('texto').value = base + texto; }
+    } catch (e) { if (final) $('aviso').textContent = e.message; }
+    emCurso = false;
+  };
+
+  gravador = new MediaRecorder(fluxo, tipo ? { mimeType: tipo, audioBitsPerSecond: 32000 } : {});
+  gravador.ondataavailable = (e) => { if (e.data.size) pedacos.push(e.data); };
+  gravador.start(1000);
+  const parcial = setInterval(() => transcrever(false), 3000);
+  botaoMic(true, '⏹ Parar');
+
+  pararGravacao = () => new Promise((pronto) => {
+    clearInterval(parcial);
+    gravador.onstop = async () => {
+      fluxo.getTracks().forEach((t) => t.stop());
+      botaoMic(false, '… transcrevendo');
+      await transcrever(true);
+      gravador = null; pararGravacao = null;
+      botaoMic(false, '🎤 Ditar');
+      pronto();
+    };
+    gravador.stop();
+  });
+}
+
+function ditarNoNavegador() {
   const base = $('texto').value ? $('texto').value.trimEnd() + ' ' : '';
   rec = new Reconhecimento();
   rec.lang = 'pt-BR'; rec.continuous = true; rec.interimResults = true;
   rec.onresult = (e) => { $('texto').value = base + [...e.results].map((r) => r[0].transcript).join(''); };
   rec.onerror = (e) => { $('aviso').textContent = 'Ditado: ' + e.error; };
-  rec.onend = () => { rec = null; $('mic').classList.remove('gravando'); $('mic').textContent = '🎤 Ditar'; };
+  rec.onend = () => { rec = null; botaoMic(false, '🎤 Ditar'); };
   rec.start();
-  $('mic').classList.add('gravando'); $('mic').textContent = '⏹ Parar';
+  botaoMic(true, '⏹ Parar');
+}
+
+// Para o ditado em andamento e só devolve quando o texto final estiver no campo.
+async function encerrarDitado() {
+  if (rec) rec.stop();
+  if (pararGravacao) await pararGravacao();
+}
+
+$('mic').onclick = async () => {
+  $('aviso').textContent = '';
+  if (rec || gravador) return encerrarDitado();
+  if (!transcricaoNoServidor) return ditarNoNavegador();
+  try { await gravar(); } catch (e) { $('aviso').textContent = 'Microfone: ' + e.message; }
 };
 
 // ----- enviar -----
 $('enviar').onclick = async () => {
   $('aviso').textContent = '';
-  if (rec) rec.stop();
   $('enviar').disabled = true;
+  await encerrarDitado();
   try {
     const anexos = await Promise.all(arquivos.map(async (f) => ({ nome: f.name, base64: await emBase64(f) })));
     const pedido = await api('/api/pedidos', { texto: $('texto').value, agente: $('agente').value, projeto: $('projeto').value, anexos });

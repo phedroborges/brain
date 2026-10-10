@@ -423,6 +423,40 @@ function novoId() {
   return `${data}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+// ---------- transcrição de áudio ----------
+// Única parte paga por uso (API da OpenAI). A lista de nomes vai junto para o
+// modelo acertar "Vizantu", "Lourival" etc.; o roteador ainda corrige o que sobrar.
+
+async function transcrever(audioBase64, tipo) {
+  const chave = cfg('OPENAI_API_KEY');
+  if (!chave) throw new Error('transcrição desligada: falta OPENAI_API_KEY');
+  const ext = /mp4|m4a|aac/.test(tipo) ? 'mp4' : /ogg/.test(tipo) ? 'ogg' : /wav/.test(tipo) ? 'wav' : /mpeg|mp3/.test(tipo) ? 'mp3' : 'webm';
+  const audio = new Blob([Buffer.from(audioBase64, 'base64')], { type: tipo.split(';')[0] || 'audio/webm' });
+  const nomes = [...new Set([...lerVocabulario(), ...lerProjetos().map((p) => p.nome)])].join(', ');
+
+  const tentar = async (modelo) => {
+    const form = new FormData();
+    form.append('file', audio, `audio.${ext}`);
+    form.append('model', modelo);
+    form.append('language', 'pt');
+    form.append('prompt', nomes);
+    const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${chave}` },
+      body: form,
+    });
+    const j = await r.json().catch(() => ({}));
+    return { ok: r.ok, status: r.status, texto: j.text ?? '', erro: j.error?.message ?? '' };
+  };
+
+  const preferido = cfg('BRAIN_TRANSCRICAO_MODELO') || 'gpt-4o-transcribe';
+  let r = await tentar(preferido);
+  // Se a conta não tiver o modelo preferido, cai no Whisper clássico.
+  if (!r.ok && r.status !== 401 && preferido !== 'whisper-1') r = await tentar('whisper-1');
+  if (!r.ok) throw new Error(`transcrição falhou (${r.status}): ${r.erro}`.slice(0, 300));
+  return r.texto.trim();
+}
+
 // ---------- conexões dos agentes ----------
 // O login do Claude, do Codex e do GitHub é feito pela própria página: o Brain
 // inicia o login oficial de cada ferramenta nesta máquina, mostra o link de
@@ -639,6 +673,11 @@ const servidor = http.createServer(async (req, res) => {
     if (rota === 'POST /api/login' && SENHA) return entrar(req, res);
     if (!logado(req)) return responder(res, 401, { erro: 'faça login' });
     if (url.pathname.startsWith('/api/conexoes')) return await rotasConexoes(req, res, url);
+    if (rota === 'GET /api/config') return responder(res, 200, { transcricao: !!cfg('OPENAI_API_KEY') });
+    if (rota === 'POST /api/transcrever') {
+      const corpo = JSON.parse(await lerCorpo(req));
+      return responder(res, 200, { texto: await transcrever(String(corpo.audio || ''), String(corpo.tipo || '')) });
+    }
     if (rota === 'GET /api/projetos') {
       return responder(
         res,
