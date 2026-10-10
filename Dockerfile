@@ -4,7 +4,7 @@
 FROM node:24-bookworm-slim
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates curl openssh-client gh \
+ && apt-get install -y --no-install-recommends git ca-certificates curl openssh-client gh python3 python3-openpyxl \
  && rm -rf /var/lib/apt/lists/* \
  && corepack enable
 

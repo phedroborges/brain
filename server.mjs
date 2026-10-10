@@ -299,7 +299,10 @@ function montarPrompt(pedido, agente, projeto, continuando) {
     `eles aparecem na conversa como anexos.`;
   const tom =
     `Responda em português, em tom de conversa de WhatsApp: direto, sem cabeçalhos nem introdução, com listas curtas ` +
-    `quando ajudar.`;
+    `quando ajudar. Dados em linhas e colunas vão em tabela markdown. Quando um gráfico ajudar de verdade a ver ` +
+    `números (comparação, evolução, proporção) ou ele pedir, inclua um bloco de código com a linguagem "grafico" ` +
+    `contendo só um JSON neste formato: {"tipo":"barras|linhas|pizza","titulo":"…","rotulos":["jan","fev"],` +
+    `"series":[{"nome":"Receita","valores":[10,20]}],"prefixo":"R$ ","sufixo":""}. A conversa desenha o gráfico.`;
 
   // Continuação na mesma sessão: o agente já tem todo o contexto.
   if (continuando) return `${pedido.texto}${anexos}\n\n---\n${entrega} ${tom}`;
@@ -915,6 +918,13 @@ const campo = (obj, nome) => buscar(obj, (chave) => chave === nome.toLowerCase()
 // Markdown dos agentes -> formatação do WhatsApp.
 function paraWhatsapp(texto) {
   return String(texto ?? '')
+    // gráfico e tabela não existem no WhatsApp: o gráfico vira um aviso e a tabela, linhas de texto
+    .replace(/```\s*gr[aá]fico[\s\S]*?```/gi, (bloco) => {
+      const titulo = bloco.match(/"titulo"\s*:\s*"([^"]*)"/)?.[1];
+      return `📊 Gráfico${titulo ? `: ${titulo}` : ''} (veja no site)`;
+    })
+    .replace(/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$\n?/gm, '')
+    .replace(/^\s*\|(.+)\|\s*$/gm, (_, miolo) => '• ' + miolo.split('|').map((c) => c.trim()).join(' — '))
     .replace(/^#{1,6}\s+(.*)$/gm, '*$1*')
     .replace(/\*\*([^*\n]+)\*\*/g, '*$1*')
     .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1: $2');
