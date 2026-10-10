@@ -891,7 +891,7 @@ async function entrar(req, res) {
 const CAPTURAS = path.join(DADOS, 'whatsapp');
 const MARCA = '\u200b'; // caractere invisível no começo do que o Brain envia, para ele não ler a própria resposta
 const idsVistos = new Set(); // mensagens já tratadas (o webhook pode repetir)
-const estadoWhatsapp = { ultimoEvento: null, ultimoErro: null, chamadas: 0, ultimaChamada: null, estruturas: [] };
+const estadoWhatsapp = { ultimoEvento: null, ultimoErro: null, chamadas: 0, ultimaChamada: null, estruturas: [], tentativas: [] };
 
 // Só a forma da chamada, sem conteúdo: nomes dos campos e tipos. Textos viram o
 // tamanho; números de telefone e ids de conversa são mascarados, sobrando só o
@@ -1086,7 +1086,11 @@ async function webhookWhatsapp(req, res, caminho) {
     if (req.method === 'GET' && caminho === `/wa/${token}/diagnostico`) {
       return responder(res, 200, { ...estadoWhatsapp, configurado: whatsappConfigurado(), transcricao: !!cfg('OPENAI_API_KEY') });
     }
-    if (req.method !== 'POST' || caminho !== `/wa/${token}`) return fim(404);
+    // Registra toda batida em /wa/ (método e o que veio depois do token), para achar chamadas em endereço diferente.
+    const comToken = caminho === `/wa/${token}` || caminho.startsWith(`/wa/${token}/`);
+    estadoWhatsapp.tentativas = [...estadoWhatsapp.tentativas, { quando: new Date().toISOString(), metodo: req.method, token: comToken, resto: comToken ? caminho.slice(`/wa/${token}`.length) : '(token diferente)', agente: String(req.headers['user-agent'] || '').slice(0, 40) }].slice(-12);
+    // Aceita também subcaminhos (alguns provedores acrescentam o nome do evento ao endereço).
+    if (req.method !== 'POST' || !comToken) return fim(404);
     const corpo = await lerCorpo(req);
     fim(200); // responde logo; o trabalho segue em seguida
     estadoWhatsapp.chamadas++;
