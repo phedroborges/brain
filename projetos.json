@@ -1,0 +1,137 @@
+[
+  {
+    "id": "vizantu-tarefas",
+    "nome": "Vizantu Tarefas",
+    "apelidos": [
+      "vizantu tarefas",
+      "sistema de tarefas",
+      "tarefas da vizantu"
+    ],
+    "repo": "phedroborges/vizantu-tarefas",
+    "descricao": "Sistema de tarefas da Vizantu (Next.js + Supabase). Projetos de clientes (ex.: Dr. Lourival), tarefas da equipe (ex.: Cynthia), planos e fila de demandas.",
+    "agente": "claude"
+  },
+  {
+    "id": "vizantu-documentacao",
+    "nome": "Vizantu Documentação",
+    "apelidos": [
+      "documentação da vizantu",
+      "POPs",
+      "contexto de cliente"
+    ],
+    "repo": "phedroborges/vizantu-documentacao",
+    "descricao": "Repositório central de documentação da Vizantu: POPs, contextos de clientes, decisões, processos, skills e agentes.",
+    "agente": "claude"
+  },
+  {
+    "id": "vizantu-planos",
+    "nome": "Vizantu Planos",
+    "apelidos": [
+      "planos da vizantu"
+    ],
+    "repo": "phedroborges/vizantu-planos",
+    "descricao": "Sistema de planos da Vizantu (TypeScript).",
+    "agente": "claude"
+  },
+  {
+    "id": "tawper-os",
+    "nome": "Tawper OS",
+    "apelidos": [
+      "tawper",
+      "sistema da tawper"
+    ],
+    "repo": "phedroborges/tawper-os",
+    "descricao": "Sistema geral da Tawper (TypeScript).",
+    "agente": "claude"
+  },
+  {
+    "id": "sistema-de-doacao",
+    "nome": "Sistema de Doação",
+    "apelidos": [
+      "doação",
+      "empório vint3"
+    ],
+    "repo": "phedroborges/sistema-de-doacao",
+    "descricao": "Sistema de doação (TypeScript).",
+    "agente": "claude"
+  },
+  {
+    "id": "fenix-os",
+    "nome": "Fênix OS",
+    "apelidos": [
+      "fênix",
+      "fenix"
+    ],
+    "repo": "phedroborges/fenix-os",
+    "descricao": "Sistema da Fênix, com notificações e PWA.",
+    "agente": "claude"
+  },
+  {
+    "id": "destra",
+    "nome": "Destra",
+    "apelidos": [
+      "despachantes",
+      "processos de armas"
+    ],
+    "repo": "phedroborges/destra",
+    "descricao": "Sistema de organização de processos de armas para despachantes (TypeScript).",
+    "agente": "claude"
+  },
+  {
+    "id": "consultoria",
+    "nome": "Consultoria",
+    "apelidos": [
+      "consultoria",
+      "fênix segurança"
+    ],
+    "repo": "phedroborges/consultoria",
+    "descricao": "Material de consultoria (diagnósticos, plataforma, projetos de clientes).",
+    "ativo": false,
+    "motivo": "no Windows o clone fica incompleto (pasta com | no nome) e um commit apagaria arquivos; na VPS (Linux) pode ser ativado"
+  },
+  {
+    "id": "brain",
+    "nome": "Brain",
+    "apelidos": [
+      "brain",
+      "meu cérebro",
+      "central",
+      "anotações"
+    ],
+    "repo": "phedroborges/brain",
+    "descricao": "Este sistema (o agente pessoal que recebe pedidos e abre sessões nos projetos) e o vault de anotações pessoais (Reels, Carrosséis, Pessoal).",
+    "agente": "claude"
+  },
+  {
+    "id": "site-renan-liscano",
+    "nome": "Site do Renan Liscano",
+    "apelidos": [
+      "site do renan",
+      "renan liscano",
+      "renanliscano.adv.br"
+    ],
+    "repo": "phedroborges/site-renan-liscano",
+    "descricao": "Site institucional (Next.js) com landing pages de serviços do advogado Renan Liscano. Os textos ficam em conteudo/ e lib/paginas/.",
+    "agente": "claude"
+  },
+  {
+    "id": "casa-caramelo",
+    "nome": "Casa Caramelo",
+    "apelidos": [
+      "casa caramelo"
+    ],
+    "descricao": "Projeto Casa Caramelo.",
+    "ativo": false,
+    "motivo": "ainda não tem repositório no GitHub (só existe no Google Drive)"
+  },
+  {
+    "id": "sanfer",
+    "nome": "Sanfer",
+    "apelidos": [
+      "sanfer"
+    ],
+    "descricao": "Projeto Sanfer.",
+    "ativo": false,
+    "motivo": "ainda não tem repositório no GitHub (só existe no Google Drive)"
+  }
+]
