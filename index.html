@@ -261,6 +261,15 @@
     .topo .marca { flex:1; min-width:0; }
     .topo { gap:10px; }
   }
+
+  /* consumo */
+  .janela.larga { width:min(1000px, 100%); max-height:90dvh; overflow:auto; }
+  .cartoes { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:14px; }
+  .cartaoN { background:var(--entrada); border:1px solid var(--borda); border-radius:10px; padding:10px 12px; }
+  .cartaoN b { display:block; font-size:22px; line-height:1.25; }
+  .cartaoN span { color:var(--sub); font-size:13px; }
+  button.chip { cursor:pointer; font:inherit; font-size:13px; }
+  button.chip:hover { border-color:var(--verde); }
 </style>
 </head>
 <body>
@@ -318,6 +327,12 @@
       </div>
 
       <div class="secao">
+        <h3>Consumo</h3>
+        <button class="botao leve" id="abrirConsumo">Ver consumo de tokens</button>
+        <p class="dica">Quanto cada agente e cada projeto gastou nos últimos dias.</p>
+      </div>
+
+      <div class="secao">
         <h3>Próxima mensagem</h3>
         <label class="campo" style="margin-top:0">Projeto<select id="projeto"></select></label>
         <label class="campo">Motor<select id="motor"><option value="">Padrão do projeto</option><option value="claude">Claude</option><option value="codex">Codex</option></select></label>
@@ -353,6 +368,13 @@
     <label class="campo" style="margin:0">Senha<input id="senha" type="password" autocomplete="current-password"></label>
     <div class="fila"><button class="botao" type="submit">Entrar</button><span class="nao" id="avisoLogin"></span></div>
   </form>
+</div>
+
+<div class="veu centro" id="consumo" hidden>
+  <div class="janela larga">
+    <div class="fila" style="margin:0 0 12px"><h3 style="margin:0; flex:1; font-size:18px">Consumo</h3><button class="botao leve" id="fecharConsumo">Fechar</button></div>
+    <div id="consumoCorpo" class="texto">Carregando…</div>
+  </div>
 </div>
 
 <div class="foto" id="foto" hidden><img alt=""></div>
@@ -684,9 +706,28 @@ let diaAnterior = '';
 let assinaturaFotos = '';
 let telaCheia = null;
 let ultimosDados = null;
-const telasAbertas = new Set();   // abertas na mão, pelo banco
+const telasAbertas = new Map();   // dono -> quando abri na mão, pelo banco
 const telasFechadas = new Map();  // dono -> quando fechei (volta sozinha se houver atividade depois)
-const TELA_RECENTE_MS = 3 * 60 * 60 * 1000;
+const TELA_PARADA_MS = 5 * 60 * 1000; // parou por 5 minutos, a tela sai; volta quando o agente for chamado
+
+// Quais telas estão em uso agora: agente trabalhando, escolhido para a próxima
+// mensagem, com atividade nos últimos 5 minutos ou aberto na mão há menos de 5 minutos.
+function telasEmUso(pedidos) {
+  const grupos = new Map();
+  for (const p of pedidos) { const d = dono(p); if (!grupos.has(d)) grupos.set(d, []); grupos.get(d).push(p); }
+  const agora = Date.now();
+  const visiveis = ORDEM.filter((d) => {
+    const lista = grupos.get(d) ?? [];
+    if (lista.some((p) => EM_ANDAMENTO.includes(p.status))) return true;
+    if (para === d) return true;
+    if (agora - (telasAbertas.get(d) ?? 0) < TELA_PARADA_MS) return true;
+    const ultimo = lista.at(-1);
+    const quando = ultimo ? new Date(ultimo.atualizadoEm || ultimo.criadoEm).getTime() : 0;
+    if (!quando || (telasFechadas.get(d) ?? 0) >= quando) return false;
+    return agora - quando < TELA_PARADA_MS;
+  });
+  return { grupos, visiveis };
+}
 const ORDEM = ['Brain', ...NOMES];
 
 const modoAtual = () => (innerWidth < 860 ? 'conversa' : modo);
@@ -714,8 +755,10 @@ function desenhar(dados) {
   if (novaAssinatura !== assinaturaFotos) { assinaturaFotos = novaAssinatura; desenhados.clear(); desenharConfig(); }
   pedidosPorId = new Map(pedidos.map((p) => [p.id, p]));
 
+  // Sem nenhum agente em uso, não há tela para mostrar: fica a conversa única.
+  const emUso = telasEmUso(pedidos);
+  const atual = modoAtual() === 'telas' && emUso.visiveis.length ? 'telas' : 'conversa';
   // trocou de modo (ou de largura de tela): recomeça a área do zero
-  const atual = modoAtual();
   if (atual !== modoDesenhado) {
     modoDesenhado = atual;
     desenhados.clear(); diaAnterior = '';
@@ -724,8 +767,9 @@ function desenhar(dados) {
     $('telas').hidden = atual !== 'telas';
     $('conversa').hidden = atual !== 'conversa';
     for (const b of $('modo').children) b.classList.toggle('sel', b.dataset.modo === modo);
+    requestAnimationFrame(() => { $('conversa').scrollTop = $('conversa').scrollHeight; document.querySelectorAll('.tela .rolo').forEach((r) => (r.scrollTop = r.scrollHeight)); });
   }
-  if (atual === 'telas') desenharTelas(pedidos, agentes, resumo); else desenharConversa(pedidos);
+  if (atual === 'telas') desenharTelas(emUso, resumo); else desenharConversa(pedidos);
   desenharPainel(pedidos, agentes, resumo);
 }
 
@@ -736,28 +780,14 @@ function desenharPainel(pedidos, agentes, resumo) {
   if (resumo?.fila) chips.push(`<span class="chip"><b>${resumo.fila}</b> na fila</span>`);
   if (resumo) {
     chips.push(`<span class="chip">hoje <b>${resumo.pedidos}</b> ${resumo.pedidos === 1 ? 'pedido' : 'pedidos'}</span>`);
-    chips.push(`<span class="chip" title="Entrada + saída, sem contar leitura de cache. Você usa a assinatura; no preço da API isso equivaleria a US$ ${resumo.custo.toFixed(2)}."><b>${compacto(resumo.tokens)}</b> tokens</span>`);
+    chips.push(`<button class="chip" data-consumo title="Clique para ver o consumo em detalhe"><b>${compacto(resumo.tokens)}</b> tokens · US$ <b>${resumo.custo.toFixed(2)}</b></button>`);
   }
   $('painel').innerHTML = chips.join('');
   $('subtitulo').textContent = ocupados.length ? `${ocupados.map((a) => a.nome).join(', ')} trabalhando` : 'sua equipe';
 }
 
 // ----- modo telas -----
-function desenharTelas(pedidos, agentes, resumo) {
-  const grupos = new Map();
-  for (const p of pedidos) { const d = dono(p); if (!grupos.has(d)) grupos.set(d, []); grupos.get(d).push(p); }
-  const agora = Date.now();
-  const ultimaAtividade = (d) => { const u = grupos.get(d)?.at(-1); return u ? new Date(u.atualizadoEm || u.criadoEm).getTime() : 0; };
-  const ocupadoPor = (d) => (grupos.get(d) ?? []).some((p) => EM_ANDAMENTO.includes(p.status));
-
-  // Uma tela aparece quando o agente está trabalhando, teve atividade recente ou foi aberta na mão.
-  let visiveis = ORDEM.filter((d) => {
-    if (ocupadoPor(d)) return true;
-    if (telasAbertas.has(d)) return true;
-    const quando = ultimaAtividade(d);
-    if (!quando || (telasFechadas.get(d) ?? 0) >= quando) return false;
-    return agora - quando < TELA_RECENTE_MS;
-  });
+function desenharTelas({ grupos, visiveis }, resumo) {
   if (telaCheia && visiveis.includes(telaCheia)) visiveis = [telaCheia]; else telaCheia = null;
 
   const area = $('telas');
@@ -854,7 +884,8 @@ function desenharConversa(pedidos) {
         <span class="tempo">${duracao(p.iniciadoEm || p.criadoEm)}</span>
         <button class="x" data-cancelar="${p.id}" title="Cancelar">${icone('x')}</button></div>
       <div class="fazendo">${escapar(p.passos[p.passos.length - 1] || 'começando')}</div></div>`).join('');
-  $('banco').innerHTML = '';
+  // sem telas abertas, o banco mostra todos os agentes: um clique abre a tela e direciona a mensagem
+  $('banco').innerHTML = modoAtual() === 'telas' ? NOMES.map((d) => `<span data-abrir-tela="${escapar(d)}" title="${escapar(d)}: abrir a tela">${avatar(d)}</span>`).join('') : '';
 }
 
 function redesenhar() { if (ultimosDados) desenhar(ultimosDados); }
@@ -902,7 +933,7 @@ async function clicar(e) {
   if (d.para) return falarCom(d.para);
   if (d.telaCheia) { telaCheia = telaCheia ? null : d.telaCheia; return redesenhar(); }
   if (d.fecharTela) { telasAbertas.delete(d.fecharTela); telasFechadas.set(d.fecharTela, Date.now()); if (para === d.fecharTela) falarCom(para); return redesenhar(); }
-  if (d.abrirTela) { telasAbertas.add(d.abrirTela); telasFechadas.delete(d.abrirTela); if (para !== d.abrirTela) falarCom(d.abrirTela); return redesenhar(); }
+  if (d.abrirTela) { telasAbertas.set(d.abrirTela, Date.now()); telasFechadas.delete(d.abrirTela); if (para !== d.abrirTela) falarCom(d.abrirTela); return redesenhar(); }
   if (d.log) {
     if (logsAbertos.has(d.log)) logsAbertos.delete(d.log);
     else logsAbertos.set(d.log, (await api('/api/pedidos/' + d.log).catch(() => ({ log:'' }))).log);
@@ -1114,6 +1145,57 @@ $('trocarSenha').onclick = async () => {
   } catch (x) { aviso.className = 'nao'; aviso.textContent = x.message; }
 };
 
+// ----- consumo: onde os tokens estão indo -----
+// "Tokens" é entrada + saída. "Cache lido" é o contexto reaproveitado entre os passos
+// do agente: conta menos, mas é o que mais cresce em tarefas longas. O valor em US$
+// é quanto custaria na API; com a assinatura não há cobrança, ele serve de medida do
+// peso de cada pedido (e é o que mais se aproxima do que consome o limite da assinatura).
+async function abrirConsumo() {
+  $('consumo').hidden = false;
+  $('consumoCorpo').textContent = 'Carregando…';
+  let c;
+  try { c = await api('/api/consumo'); } catch (x) { $('consumoCorpo').textContent = x.message; return; }
+  const us = (v) => 'US$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const tok = (a) => compacto(a.entrada + a.saida);
+  const media = (a) => (a.pedidos ? us(a.custo / a.pedidos) : '—');
+  const cartao = (valor, rotulo) => `<div class="cartaoN"><b>${valor}</b><span>${rotulo}</span></div>`;
+  const limpo = (t) => String(t).replace(/[|\n]/g, ' ');
+  const tabela = (titulo, primeira, grupo) => {
+    const linhas = Object.entries(grupo).sort((a, b) => b[1].custo - a[1].custo || b[1].entrada - a[1].entrada);
+    if (!linhas.length) return '';
+    const total = linhas.reduce((t, [, a]) => t + a.custo, 0) || 1;
+    return `### ${titulo}\n\n| ${primeira} | Pedidos | Tokens | Cache lido | Equivalente | Parte |\n|---|---:|---:|---:|---:|---:|\n` +
+      linhas.map(([nome, a]) => `| ${limpo(nome)} | ${a.pedidos} | ${tok(a)} | ${compacto(a.cache)} | ${us(a.custo)} | ${Math.round((a.custo / total) * 100)}% |`).join('\n') + '\n\n';
+  };
+  const diasOrdenados = Object.keys(c.dias).sort();
+  const grafico = diasOrdenados.length > 1
+    ? '```grafico\n' + JSON.stringify({ tipo: 'barras', titulo: 'Equivalente em US$ por dia', rotulos: diasOrdenados.map((d) => d.slice(8) + '/' + d.slice(5, 7)), series: [{ nome: 'US$', valores: diasOrdenados.map((d) => +c.dias[d].custo.toFixed(2)) }], prefixo: 'US$ ' }) + '\n```\n\n'
+    : '';
+  const maiores = c.maiores.length
+    ? '### Pedidos mais pesados (7 dias)\n\n| Quando | Agente | Projeto | Pedido | Tokens | Cache lido | Equivalente |\n|---|---|---|---|---:|---:|---:|\n' +
+      c.maiores.map((m) => `| ${new Date(m.quando).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} | ${m.agente} | ${limpo(m.projeto)} | ${limpo(m.texto)} | ${compacto(m.tokens)} | ${compacto(m.cache)} | ${us(m.custo)} |`).join('\n') + '\n\n'
+    : '';
+  const nomesDosTipos = { resposta: 'Resposta direta do Brain', geral: 'Pergunta ou pesquisa', projeto: 'Trabalho em projeto', continuar: 'Continuação com um agente', outro: 'Sem tipo' };
+  const porTipo = Object.fromEntries(Object.entries(c.porTipo).map(([k, v]) => [nomesDosTipos[k] || k, v]));
+  $('consumoCorpo').innerHTML =
+    `<div class="cartoes">
+      ${cartao(us(c.hoje.custo), 'hoje, no preço da API')}
+      ${cartao(tok(c.hoje), `tokens hoje · ${c.hoje.pedidos} pedidos`)}
+      ${cartao(us(c.seteDias.custo), 'últimos 7 dias')}
+      ${cartao(tok(c.seteDias), `tokens em 7 dias · ${c.seteDias.pedidos} pedidos`)}
+      ${cartao(media(c.seteDias), 'média por pedido')}
+      ${cartao(compacto(c.seteDias.cache), 'cache lido em 7 dias')}
+    </div>` +
+    formatar(
+      grafico + tabela('Por agente (7 dias)', 'Agente', c.porAgente) + tabela('Por projeto (7 dias)', 'Projeto', c.porProjeto) + tabela('Por tipo de pedido (7 dias)', 'Tipo', porTipo) + maiores +
+      '> Você usa a assinatura: não há cobrança por pedido. O valor em US$ é quanto custaria na API e serve de medida do peso de cada pedido. Pedidos anteriores à contagem aparecem com zero. No Codex só o total de tokens é conhecido, sem valor.',
+    );
+}
+$('painel').onclick = (e) => { if (e.target.closest('[data-consumo]')) abrirConsumo(); };
+$('abrirConsumo').onclick = () => { $('config').hidden = true; abrirConsumo(); };
+$('fecharConsumo').onclick = () => ($('consumo').hidden = true);
+$('consumo').onclick = (e) => { if (e.target === $('consumo')) $('consumo').hidden = true; };
+
 // ----- WhatsApp: o grupo de comandos -----
 let capturasWhatsapp = '';
 async function atualizarWhatsapp() {
@@ -1206,6 +1288,7 @@ async function iniciar() {
   $('conversa').scrollTop = $('conversa').scrollHeight;
   document.querySelectorAll('.tela .rolo').forEach((r) => (r.scrollTop = r.scrollHeight));
   if (location.hash === '#config') abrirConfig(); // link direto para as configurações
+  if (location.hash === '#consumo') abrirConsumo();
 }
 iniciar();
 setInterval(atualizar, 1500);

@@ -1337,6 +1337,53 @@ const servidor = http.createServer(async (req, res) => {
       );
     }
 
+    // Consumo dos últimos 14 dias: por dia, por agente, por projeto, por tipo e os pedidos mais caros.
+    if (rota === 'GET /api/consumo') {
+      const projetos = lerProjetos();
+      const nomeDoProjeto = (id) => projetos.find((x) => x.id === id)?.nome ?? (id || 'Sem projeto');
+      const dia = (data) => {
+        const d = new Date(data);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      };
+      const zero = () => ({ pedidos: 0, entrada: 0, saida: 0, cache: 0, custo: 0 });
+      const somar = (a, p) => {
+        a.pedidos++;
+        a.entrada += p.uso?.entrada ?? 0;
+        a.saida += p.uso?.saida ?? 0;
+        a.cache += p.uso?.cache ?? 0;
+        a.custo += p.uso?.custo ?? 0;
+      };
+      const agora = Date.now();
+      const hojeDia = dia(agora);
+      const hoje = zero(), seteDias = zero();
+      const dias = {}, porAgente = {}, porProjeto = {}, porTipo = {};
+      const maiores = [];
+      for (const p of listar()) {
+        const quando = new Date(p.criadoEm).getTime();
+        if (quando < agora - 14 * 86400000) break; // a lista vem do mais novo para o mais antigo
+        somar((dias[dia(quando)] ??= zero()), p);
+        if (dia(quando) === hojeDia) somar(hoje, p);
+        if (quando < agora - 7 * 86400000) continue;
+        somar(seteDias, p);
+        somar((porAgente[p.agente || 'Brain'] ??= zero()), p);
+        somar((porProjeto[nomeDoProjeto(p.projeto)] ??= zero()), p);
+        somar((porTipo[p.tipo || 'outro'] ??= zero()), p);
+        if (p.uso) {
+          maiores.push({
+            quando: p.criadoEm,
+            agente: p.agente || 'Brain',
+            projeto: nomeDoProjeto(p.projeto),
+            texto: curto(p.texto, 110),
+            tokens: p.uso.entrada + p.uso.saida,
+            cache: p.uso.cache,
+            custo: p.uso.custo,
+          });
+        }
+      }
+      maiores.sort((a, b) => b.custo - a.custo || b.tokens - a.tokens);
+      return responder(res, 200, { hoje, seteDias, dias, porAgente, porProjeto, porTipo, maiores: maiores.slice(0, 12) });
+    }
+
     if (rota === 'GET /api/conversa') {
       const projetos = lerProjetos();
       const todos = listar();
