@@ -880,9 +880,9 @@ async function entrar(req, res) {
 }
 
 // ---------- WhatsApp ----------
-// O grupo de comandos funciona como a conversa do site: o que EU escrevo lá
-// vira pedido, e a resposta volta para o mesmo grupo. Mensagens de outros
-// grupos, de outros contatos e de outras pessoas no grupo são descartadas.
+// O grupo de comandos funciona como a conversa do site: o que qualquer
+// participante escreve lá vira pedido, e a resposta volta para o mesmo grupo.
+// Mensagens de outros grupos e de conversas particulares são descartadas.
 //
 // O formato do webhook da Stevo não está documentado; a leitura abaixo segue o
 // formato das bibliotecas em que ela se baseia e procura os campos de forma
@@ -993,10 +993,9 @@ async function receberDoWhatsapp(payload) {
   if (!info || !mensagem) return;
 
   const conversa = String(campo(info, 'chat') ?? '');
-  const minha = campo(info, 'isfromme') === true;
   const id = String(campo(info, 'id') ?? '');
-  // Só o grupo de comandos, e só o que o dono do número escreveu.
-  if (!conversa.startsWith(cfg('BRAIN_WHATSAPP_GRUPO').split('@')[0]) || !minha) return;
+  // Só o grupo de comandos; dentro dele, vale a mensagem de qualquer participante.
+  if (!conversa.startsWith(cfg('BRAIN_WHATSAPP_GRUPO').split('@')[0])) return;
   if (id && idsVistos.has(id)) return;
   if (id) idsVistos.add(id);
 
