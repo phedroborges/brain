@@ -381,6 +381,144 @@ function novoId() {
   return `${data}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+// ---------- conexões dos agentes ----------
+// O login do Claude, do Codex e do GitHub é feito pela própria página: o Brain
+// inicia o login oficial de cada ferramenta nesta máquina, mostra o link de
+// autorização e a credencial fica guardada aqui (em HOME), não em variáveis.
+
+const CONEXOES = {
+  claude: {
+    nome: 'Claude',
+    login: ['claude', ['auth', 'login', '--claudeai']],
+    status: ['claude', ['auth', 'status', '--json']],
+    // A página de autorização devolve um código para colar; o login é uma tela
+    // interativa, então no Linux roda dentro de um pseudo-terminal.
+    pedeCodigo: true,
+    pty: true,
+  },
+  codex: {
+    nome: 'Codex',
+    login: ['codex', ['login', '--device-auth']],
+    status: ['codex', ['login', 'status']],
+  },
+  github: {
+    nome: 'GitHub',
+    login: ['gh', ['auth', 'login', '--hostname', 'github.com', '--git-protocol', 'https', '--web', '--skip-ssh-key']],
+    status: ['gh', ['auth', 'status']],
+    depois: () => spawnSync('gh', ['auth', 'setup-git'], { windowsHide: true }),
+  },
+};
+
+const ANSI = /\x1b\[[0-9;?]*[ -\/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-_]/g;
+const logins = new Map(); // id -> login em andamento ou o último resultado
+let cacheStatus = null;
+
+function matar(filho) {
+  if (process.platform === 'win32') spawn('taskkill', ['/PID', String(filho.pid), '/T', '/F'], { windowsHide: true });
+  else filho.kill('SIGTERM');
+}
+
+async function statusConexoes() {
+  if (cacheStatus && Date.now() - cacheStatus.em < 30000) return cacheStatus.valores;
+  const pares = await Promise.all(
+    Object.entries(CONEXOES).map(async ([id, c]) => {
+      const r = await rodar(c.status[0], c.status[1], { cwd: DADOS });
+      let ok = r.codigo === 0;
+      if (id === 'claude') {
+        try {
+          const j = JSON.parse(r.saida);
+          if (typeof j.loggedIn === 'boolean') ok = j.loggedIn;
+        } catch {}
+      }
+      return [id, ok];
+    }),
+  );
+  cacheStatus = { em: Date.now(), valores: Object.fromEntries(pares) };
+  return cacheStatus.valores;
+}
+
+function iniciarLogin(id) {
+  const c = CONEXOES[id];
+  const anterior = logins.get(id);
+  if (anterior?.estado === 'aguardando') matar(anterior.filho);
+
+  const [cmd, args] = c.login;
+  const opcoes = { env: ambienteDoAgente(), cwd: DADOS, windowsHide: true };
+  const filho =
+    c.pty && process.platform === 'linux'
+      ? // Terminal largo para o link de autorização não ser quebrado em várias linhas.
+        spawn('script', ['-qfec', `stty cols 4000 rows 50; exec ${[cmd, ...args].join(' ')}`, '/dev/null'], opcoes)
+      : spawn(cmd, args, opcoes);
+
+  const login = { filho, saida: '', url: '', codigo: '', estado: 'aguardando', erro: '', pedeCodigo: !!c.pedeCodigo };
+  logins.set(id, login);
+
+  const ler = (d) => {
+    login.saida = (login.saida + d.toString().replace(ANSI, '')).slice(-8000);
+    login.url = login.saida.match(/https:\/\/[^\s"'<>]+/)?.[0] ?? '';
+    if (!c.pedeCodigo) login.codigo = login.saida.match(/\b[A-Z0-9]{4}-[A-Z0-9]{4,5}\b/)?.[0] ?? '';
+  };
+  filho.stdout.on('data', ler);
+  filho.stderr.on('data', ler);
+
+  const limite = setTimeout(() => {
+    if (login.estado !== 'aguardando') return;
+    login.estado = 'erro';
+    login.erro = 'tempo esgotado (10 minutos)';
+    matar(filho);
+  }, 10 * 60 * 1000);
+
+  filho.on('error', (e) => {
+    clearTimeout(limite);
+    login.estado = 'erro';
+    login.erro = String(e.message || e);
+  });
+  filho.on('close', (codigo) => {
+    clearTimeout(limite);
+    cacheStatus = null;
+    if (login.estado !== 'aguardando') return;
+    if (codigo === 0) {
+      c.depois?.();
+      login.estado = 'ok';
+    } else {
+      login.estado = 'erro';
+      login.erro = login.saida.trim().split('\n').slice(-3).join(' ').slice(0, 300) || `terminou com código ${codigo}`;
+    }
+  });
+  return login;
+}
+
+const verLogin = (l) => l && { estado: l.estado, url: l.url, codigo: l.codigo, pedeCodigo: l.pedeCodigo, erro: l.erro };
+
+async function rotasConexoes(req, res, url) {
+  if (req.method === 'GET' && url.pathname === '/api/conexoes') {
+    const status = await statusConexoes();
+    return responder(
+      res,
+      200,
+      Object.entries(CONEXOES).map(([id, c]) => ({ id, nome: c.nome, conectado: !!status[id], login: verLogin(logins.get(id)) })),
+    );
+  }
+  const m = url.pathname.match(/^\/api\/conexoes\/(claude|codex|github)\/(entrar|codigo)$/);
+  if (!m || req.method !== 'POST') return responder(res, 404, { erro: 'rota não encontrada' });
+  const [, id, acao] = m;
+
+  if (acao === 'entrar') {
+    await lerCorpo(req);
+    const login = iniciarLogin(id);
+    // Espera o link de autorização aparecer na saída do login.
+    for (let i = 0; i < 40 && login.estado === 'aguardando' && !login.url; i++) await new Promise((r) => setTimeout(r, 500));
+    return responder(res, 200, verLogin(login));
+  }
+
+  const login = logins.get(id);
+  if (login?.estado !== 'aguardando') return responder(res, 409, { erro: 'não há login em andamento' });
+  const codigo = String(JSON.parse(await lerCorpo(req)).codigo || '').replace(/[\r\n]/g, '').trim();
+  if (!codigo) return responder(res, 400, { erro: 'cole o código' });
+  login.filho.stdin.write(codigo + '\r');
+  responder(res, 200, { ok: true });
+}
+
 // ---------- login (só quando há BRAIN_SENHA) ----------
 
 const sessoes = new Map(); // token -> validade (ms)
@@ -458,6 +596,7 @@ const servidor = http.createServer(async (req, res) => {
     }
     if (rota === 'POST /api/login' && SENHA) return entrar(req, res);
     if (!logado(req)) return responder(res, 401, { erro: 'faça login' });
+    if (url.pathname.startsWith('/api/conexoes')) return await rotasConexoes(req, res, url);
     if (rota === 'GET /api/projetos') {
       return responder(
         res,

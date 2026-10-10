@@ -56,8 +56,10 @@ A configuração fica em `~/.brain/.env` e os pedidos em `~/.brain/pedidos/`.
 2. Monte um **volume** em `/dados`.
 3. Exponha a porta **4848** em um domínio com HTTPS.
 4. Defina as variáveis de ambiente do `.env.example`. As obrigatórias são
-   `BRAIN_SENHA`, `BRAIN_HOSTS`, `CLAUDE_CODE_OAUTH_TOKEN` e `GH_TOKEN`.
-5. Para usar o Codex, abra o console do contêiner e rode `runuser -u brain -- codex login`.
+   `BRAIN_SENHA` e `BRAIN_HOSTS`.
+5. Abra o site, entre com a senha e, em **Conexões**, conecte o Claude, o Codex e
+   o GitHub. Cada botão inicia o login oficial da ferramenta na VPS e mostra o
+   link de autorização; a credencial fica guardada no volume `/dados`.
 6. WhatsApp: no painel da Stevo, em Webhook, cole
    `https://<domínio>/wa/<BRAIN_WEBHOOK_TOKEN>` com o evento `MESSAGE`.
 

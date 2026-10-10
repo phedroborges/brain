@@ -66,6 +66,9 @@
 
   <h2>Pedidos</h2>
   <div id="lista"><div class="vazio">Nenhum pedido ainda.</div></div>
+
+  <h2>Conexões</h2>
+  <div class="card" id="conexoes"><div class="vazio">Verificando…</div></div>
 </main>
 
 <script>
@@ -90,7 +93,7 @@ async function entrar(e) {
   try {
     await api('/api/login', { senha: $('senha').value });
     $('login').hidden = true; $('senha').value = '';
-    carregarProjetos().then(atualizar);
+    carregarProjetos().then(atualizar).then(atualizarConexoes);
   } catch (x) { $('avisoLogin').textContent = x.message; }
 }
 
@@ -175,8 +178,52 @@ $('lista').onclick = async (e) => {
   if (card) { aberto = aberto === card.dataset.id ? null : card.dataset.id; atualizar(); }
 };
 
-carregarProjetos().then(atualizar);
+// ----- conexões (login do Claude, do Codex e do GitHub nesta máquina) -----
+let loginPendente = false;
+async function atualizarConexoes() {
+  let lista;
+  try { lista = await api('/api/conexoes'); } catch { return; }
+  loginPendente = lista.some((c) => c.login?.estado === 'aguardando');
+  if (document.activeElement?.dataset.codigoDe) return; // não redesenha enquanto você digita o código
+  $('conexoes').innerHTML = lista.map((c) => {
+    const l = c.login;
+    let passo = '';
+    if (l?.estado === 'aguardando') {
+      passo = `<div class="detalhe">
+        ${l.url ? `<div>1. <a href="${escapar(l.url)}" target="_blank" rel="noopener">Abrir a página de autorização</a></div>` : '<div>Iniciando o login…</div>'}
+        ${l.codigo ? `<div>2. Digite lá este código: <b>${escapar(l.codigo)}</b></div>` : ''}
+        ${l.pedeCodigo ? `<div class="linha">2. Cole aqui o código que a página mostrar:
+          <input data-codigo-de="${c.id}" style="flex:1; min-width:160px; background:#20242e; color:var(--txt); border:1px solid var(--borda); border-radius:8px; padding:8px 12px; font:inherit;">
+          <button data-enviar-codigo="${c.id}">Enviar</button></div>` : ''}
+        <div class="anexos">Esta tela atualiza sozinha quando a conexão for concluída.</div>
+      </div>`;
+    } else if (l?.estado === 'erro') {
+      passo = `<div class="aviso">${escapar(l.erro)}</div>`;
+    }
+    return `<div style="padding:6px 0">
+      <div class="linha" style="margin-top:0">
+        <b>${escapar(c.nome)}</b>
+        <span class="selo ${c.conectado ? 'concluido' : 'erro'}">${c.conectado ? 'conectado' : 'não conectado'}</span>
+        <button data-entrar="${c.id}" style="margin-left:auto">${c.conectado ? 'Reconectar' : 'Conectar'}</button>
+      </div>${passo}</div>`;
+  }).join('');
+}
+$('conexoes').onclick = async (e) => {
+  const { entrar, enviarCodigo } = e.target.dataset;
+  try {
+    if (entrar) { e.target.disabled = true; e.target.textContent = 'Iniciando…'; await api(`/api/conexoes/${entrar}/entrar`, {}); }
+    if (enviarCodigo) {
+      const campo = document.querySelector(`[data-codigo-de="${enviarCodigo}"]`);
+      await api(`/api/conexoes/${enviarCodigo}/codigo`, { codigo: campo.value });
+      campo.blur();
+    }
+  } catch (x) { $('aviso').textContent = x.message; }
+  if (entrar || enviarCodigo) atualizarConexoes();
+};
+
+carregarProjetos().then(atualizar).then(atualizarConexoes);
 setInterval(atualizar, 3000);
+setInterval(() => { if (loginPendente) atualizarConexoes(); }, 3000);
 </script>
 </body>
 </html>
