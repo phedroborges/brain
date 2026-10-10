@@ -247,7 +247,9 @@ async function rotear(pedido, projetos) {
     `Mensagem nova${pedido.anexos.length ? ` (veio com ${pedido.anexos.length} anexo(s), que você não consegue abrir)` : ''}:\n` +
     `"""${pedido.texto}"""\n\n` +
     `Responda SOMENTE com um JSON: {"tipo":"resposta|geral|projeto|continuar","resposta":"<só no tipo resposta>",` +
-    `"projeto":"<id ou null>","agente":"<nome ou null>","texto":"<mensagem com os nomes corrigidos>","motivo":"<uma frase>"}. ` +
+    `"projeto":"<id ou null>","agente":"<nome ou null>","imagem":<true se ele pede para CRIAR ou EDITAR uma imagem ` +
+    `(arte, post, logo, ilustração, foto); false para todo o resto, inclusive analisar uma imagem enviada ou ` +
+    `escrever legenda>,"texto":"<mensagem com os nomes corrigidos>","motivo":"<uma frase>"}. ` +
     `Não use ferramentas.`;
   const r = await rodar('claude', ['-p', '--model', MODELO_ROTEADOR, '--output-format', 'json'], {
     cwd: path.join(PEDIDOS, pedido.id),
@@ -336,7 +338,8 @@ function montarPrompt(pedido, agente, projeto, continuando) {
     : '';
   const entrega =
     `Se produzir arquivos para entregar (documentos, imagens, planilhas), salve-os em "${path.join(dir, 'entrega')}": ` +
-    `eles aparecem na conversa como anexos.`;
+    `eles aparecem na conversa como anexos. Se o pedido for criar ou editar uma imagem, use a sua ferramenta de ` +
+    `geração de imagem e salve o resultado (PNG ou JPG) nessa mesma pasta.`;
   const tom =
     `Responda em português, curto e direto, como numa conversa de WhatsApp. Quem lê é rápido e quer só o resultado: ` +
     `diga o que foi feito em uma ou duas frases (ex.: "Atualizei X no sistema. Commit e push feitos, pode fazer o ` +
@@ -513,6 +516,11 @@ async function processar(pedido) {
       pedido.tipo = ['resposta', 'geral', 'projeto', 'continuar'].includes(escolha.tipo) ? escolha.tipo : 'geral';
       // O roteador não abre anexos: com anexo, quem responde é um agente.
       if (pedido.tipo === 'resposta' && (pedido.anexos.length || !String(escolha.resposta || '').trim())) pedido.tipo = 'geral';
+      // Criar ou editar imagem é trabalho do Codex, que tem a ferramenta de geração de imagem.
+      if (escolha.imagem === true) {
+        pedido.motor = 'codex';
+        if (pedido.tipo === 'resposta') pedido.tipo = 'geral';
+      }
 
       if (pedido.tipo === 'resposta') {
         pedido.agente = 'Brain';
@@ -523,8 +531,9 @@ async function processar(pedido) {
       if (pedido.tipo === 'continuar') {
         alvo = acharAgente(escolha.agente);
         // Agente sem trabalho anterior não tem o que continuar: vira um pedido novo.
-        if (!alvo || (!alvo.sessao && !alvo.ocupado)) {
-          if (alvo) pedido.preferir = alvo.nome;
+        // Também vira pedido novo quando é imagem e o agente estava trabalhando com o Claude.
+        if (!alvo || (!alvo.sessao && !alvo.ocupado) || (escolha.imagem === true && alvo.motor !== 'codex')) {
+          if (alvo && !alvo.ocupado) pedido.preferir = alvo.nome;
           alvo = null;
           pedido.tipo = escolha.projeto ? 'projeto' : 'geral';
         }
@@ -1024,14 +1033,25 @@ function avisarWhatsapp(pedido) {
   }
   if (['concluido', 'erro', 'interrompido'].includes(pedido.status) && !feitos.has('fim')) {
     feitos.add('fim');
-    const entregas = (pedido.entregas ?? []).map((e) => `📎 ${e.nome}`).join('\n');
     const site = [...HOSTS].find((h) => h.includes('.') && !/^[\d.]+$/.test(h) && !h.endsWith('.localhost'));
-    const corpo = [
-      paraWhatsapp(pedido.resultado),
-      pedido.erro ? `⚠️ ${pedido.erro}` : '',
-      entregas ? `${entregas}\n${site ? `Arquivos em https://${site}` : 'Arquivos disponíveis no site.'}` : '',
-    ].filter(Boolean).join('\n\n');
-    enviarWhatsapp(`${quem}\n\n${corpo || '(sem resposta)'}`);
+    const entregas = pedido.entregas ?? [];
+    // Sem endereço público não dá para a Stevo buscar os arquivos: só lista os nomes.
+    const lista = !site && entregas.length ? `${entregas.map((e) => `📎 ${e.nome}`).join('\n')}\nArquivos disponíveis no site.` : '';
+    const corpo = [paraWhatsapp(pedido.resultado), pedido.erro ? `⚠️ ${pedido.erro}` : '', lista].filter(Boolean).join('\n\n');
+    enviarWhatsapp(`${quem}\n\n${corpo || '(sem resposta)'}`).then(async () => {
+      if (!site) return;
+      // Imagens e documentos entregues vão para o grupo; a Stevo baixa cada um pelo endereço com o token.
+      for (const e of entregas) {
+        const tipo = /\.(png|jpe?g|webp|gif)$/i.test(e.nome) ? 'image' : /\.(mp4|mov)$/i.test(e.nome) ? 'video' : /\.(mp3|ogg|m4a|wav)$/i.test(e.nome) ? 'audio' : 'document';
+        const url = `https://${site}/wa/${cfg('BRAIN_WEBHOOK_TOKEN')}/arquivo/${pedido.id}/${encodeURIComponent(e.nome)}`;
+        try {
+          await stevo('/send/media', { number: cfg('BRAIN_WHATSAPP_GRUPO'), type: tipo, url, caption: tipo === 'document' ? e.nome : '', filename: e.nome });
+        } catch (x) {
+          estadoWhatsapp.ultimoErro = `envio de arquivo: ${x.message}`;
+          await enviarWhatsapp(`📎 ${e.nome}: não consegui enviar por aqui; está no site.`);
+        }
+      }
+    });
     avisados.delete(pedido.id);
   }
 }
@@ -1127,6 +1147,11 @@ async function webhookWhatsapp(req, res, caminho) {
     const grupo = cfg('BRAIN_WHATSAPP_GRUPO');
     if (!token || !grupo) return fim(503);
     // Diagnóstico para quem tem o token: quantas chamadas chegaram e a forma delas, sem conteúdo.
+    // Arquivo entregue por um agente, para a Stevo buscar e mandar ao grupo.
+    const entregue = caminho.match(/^\/wa\/([^/]+)\/arquivo\/([\w-]+)\/([^/]+)$/);
+    if (req.method === 'GET' && entregue && entregue[1] === token) {
+      return enviarArquivo(res, path.join(PEDIDOS, entregue[2], 'entrega', path.basename(decodeURIComponent(entregue[3]))));
+    }
     if (req.method === 'GET' && caminho === `/wa/${token}/diagnostico`) {
       return responder(res, 200, { ...estadoWhatsapp, configurado: whatsappConfigurado(), transcricao: !!cfg('OPENAI_API_KEY') });
     }
