@@ -891,7 +891,26 @@ async function entrar(req, res) {
 const CAPTURAS = path.join(DADOS, 'whatsapp');
 const MARCA = '\u200b'; // caractere invisível no começo do que o Brain envia, para ele não ler a própria resposta
 const idsVistos = new Set(); // mensagens já tratadas (o webhook pode repetir)
-const estadoWhatsapp = { ultimoEvento: null, ultimoErro: null };
+const estadoWhatsapp = { ultimoEvento: null, ultimoErro: null, chamadas: 0, ultimaChamada: null, estruturas: [] };
+
+// Só a forma da chamada, sem conteúdo: nomes dos campos e tipos. Textos viram o
+// tamanho; números de telefone e ids de conversa são mascarados, sobrando só o
+// tipo (@g.us, @s.whatsapp.net…) e se é ou não o grupo de comandos.
+function estrutura(valor, chave = '', nivel = 0) {
+  if (typeof valor === 'string') {
+    if (valor.includes('@')) {
+      const ehOGrupo = valor.startsWith(cfg('BRAIN_WHATSAPP_GRUPO').split('@')[0]);
+      return `${ehOGrupo ? 'GRUPO-DE-COMANDOS' : '…'}@${valor.split('@')[1].slice(0, 20)}`;
+    }
+    return /^(event|type|mediatype|category)$/i.test(chave) ? valor.slice(0, 40) : `texto(${valor.length})`;
+  }
+  if (Array.isArray(valor)) return valor.length ? [estrutura(valor[0], chave, nivel + 1)] : [];
+  if (valor && typeof valor === 'object') {
+    if (nivel > 6) return '{…}';
+    return Object.fromEntries(Object.entries(valor).map(([k, v]) => [k, estrutura(v, k, nivel + 1)]));
+  }
+  return valor === null ? null : typeof valor;
+}
 
 const whatsappConfigurado = () => !!(cfg('STEVO_API_URL') && cfg('STEVO_API_KEY') && cfg('BRAIN_WHATSAPP_GRUPO') && cfg('BRAIN_WEBHOOK_TOKEN'));
 
@@ -1063,9 +1082,20 @@ async function webhookWhatsapp(req, res, caminho) {
     const token = cfg('BRAIN_WEBHOOK_TOKEN');
     const grupo = cfg('BRAIN_WHATSAPP_GRUPO');
     if (!token || !grupo) return fim(503);
+    // Diagnóstico para quem tem o token: quantas chamadas chegaram e a forma delas, sem conteúdo.
+    if (req.method === 'GET' && caminho === `/wa/${token}/diagnostico`) {
+      return responder(res, 200, { ...estadoWhatsapp, configurado: whatsappConfigurado(), transcricao: !!cfg('OPENAI_API_KEY') });
+    }
     if (req.method !== 'POST' || caminho !== `/wa/${token}`) return fim(404);
     const corpo = await lerCorpo(req);
     fim(200); // responde logo; o trabalho segue em seguida
+    estadoWhatsapp.chamadas++;
+    estadoWhatsapp.ultimaChamada = new Date().toISOString();
+    try {
+      estadoWhatsapp.estruturas = [...estadoWhatsapp.estruturas, estrutura(JSON.parse(corpo))].slice(-6);
+    } catch {
+      estadoWhatsapp.estruturas = [...estadoWhatsapp.estruturas, `não é JSON (${corpo.length} caracteres)`].slice(-6);
+    }
     // Tudo que não for do grupo de comandos é descartado sem guardar nada.
     if (!corpo.includes(grupo.split('@')[0])) return;
     estadoWhatsapp.ultimoEvento = new Date().toISOString();
