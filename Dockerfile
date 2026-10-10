@@ -20,6 +20,7 @@ ENV HOME=/dados \
 
 WORKDIR /app
 COPY server.mjs index.html projetos.json vocabulario.json docker-entrypoint.sh ./
+COPY avatares ./avatares
 RUN chmod +x docker-entrypoint.sh
 
 VOLUME /dados

@@ -116,14 +116,14 @@ function log(id, texto) {
 
 // Pedidos que ficaram "em andamento" de uma execução anterior do servidor.
 for (const p of listar()) {
-  if (p.status === 'roteando' || p.status === 'executando') {
+  if (['recebido', 'roteando', 'na_fila', 'executando'].includes(p.status)) {
     p.status = 'interrompido';
-    p.erro = 'O servidor da Brain reiniciou durante a execução.';
+    p.erro = 'O servidor do Brain reiniciou durante a execução.';
     salvar(p);
   }
 }
 
-// ---------- roteador ----------
+// ---------- processos ----------
 
 // Os agentes usam a assinatura (login do Claude Code e do Codex), nunca a API
 // paga por uso: as chaves de API não chegam até eles, mesmo que existam no
@@ -152,6 +152,59 @@ function rodar(cmd, args, { cwd, entrada, aoLer }) {
   });
 }
 
+// ---------- agentes ----------
+// A conversa é uma só. Cada pedido de trabalho é entregue a um dos oito agentes,
+// que trabalham em paralelo. Um agente guarda a sessão do último trabalho, então
+// dá para continuar falando com ele ("Trixie, muda também o rodapé").
+
+const NOMES = ['Junior', 'Trixie', 'Flocos', 'Ágato', 'Guará', 'Marsha', 'Dino', 'Paçoca'];
+const ARQ_AGENTES = path.join(DADOS, 'agentes.json');
+const agentes = new Map(NOMES.map((nome) => [nome, { nome, ocupado: null, sessao: null, motor: null, projeto: null, pasta: null, usadoEm: 0, resumo: '' }]));
+try {
+  for (const a of JSON.parse(fs.readFileSync(ARQ_AGENTES, 'utf8'))) {
+    if (agentes.has(a.nome)) Object.assign(agentes.get(a.nome), a, { ocupado: null });
+  }
+} catch {}
+const salvarAgentes = () => fs.writeFileSync(ARQ_AGENTES, JSON.stringify([...agentes.values()], null, 2));
+
+const semAcento = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const acharAgente = (nome) => [...agentes.values()].find((a) => semAcento(a.nome) === semAcento(nome ?? ''));
+
+const fila = []; // ids de pedidos esperando um agente
+const atividade = new Map(); // id do pedido -> passos recentes (o que o agente está fazendo)
+
+function passo(id, texto) {
+  log(id, `  → ${texto}`);
+  const lista = atividade.get(id) ?? [];
+  lista.push(texto);
+  atividade.set(id, lista.slice(-40));
+}
+
+// ---------- roteador ----------
+
+const curto = (s, n) => {
+  const t = String(s ?? '').replace(/\s+/g, ' ').trim();
+  return t.length > n ? t.slice(0, n) + '…' : t;
+};
+
+function contextoDaConversa(idAtual) {
+  const recentes = listar().filter((p) => p.id !== idAtual).slice(0, 10).reverse();
+  const historico = recentes
+    .map((p) => {
+      const resposta = p.resultado ? `\n${p.agente || 'Brain'}${p.projeto ? ` (${p.projeto})` : ''}: ${curto(p.resultado, 350)}` : '';
+      return `Phedro: ${curto(p.texto, 300)}${resposta}`;
+    })
+    .join('\n');
+  const equipe = [...agentes.values()]
+    .map((a) => {
+      if (a.ocupado) return `- ${a.nome}: TRABALHANDO AGORA${a.projeto ? ` em ${a.projeto}` : ''} — "${curto(a.resumo, 160)}"`;
+      if (a.sessao) return `- ${a.nome}: livre; último trabalho${a.projeto ? ` em ${a.projeto}` : ''} — "${curto(a.resumo, 160)}"`;
+      return `- ${a.nome}: livre, ainda sem trabalho`;
+    })
+    .join('\n');
+  return { historico, equipe };
+}
+
 async function rotear(pedido, projetos) {
   const catalogo = projetos
     .map(
@@ -160,21 +213,35 @@ async function rotear(pedido, projetos) {
         `${p.ativo ? 'disponível' : 'INDISPONÍVEL: ' + (p.motivo || '')} | ${p.descricao || ''}`,
     )
     .join('\n');
+  const { historico, equipe } = contextoDaConversa(pedido.id);
   const prompt =
-    `Você recebe pedidos do Phedro, quase sempre ditados por voz. A transcrição erra nomes próprios: ` +
-    `troca por palavras comuns de som parecido (ex.: "visando tarefas", "vizando" ou "bizantu" = Vizantu Tarefas; ` +
-    `"renã" = Renan; "tauper" = Tawper). Sua tarefa tem duas partes.\n\n` +
-    `1) Entender de qual projeto ele está falando. Leia pelo SOM e pelo sentido, não pela grafia. ` +
-    `Escolha o projeto mais provável: não precisa de concordância exata, basta ser a leitura mais natural do pedido. ` +
-    `O projeto "brain" só é a resposta quando o pedido é sobre o próprio Brain (este sistema de pedidos) ou sobre as ` +
-    `anotações pessoais; o fato de o Brain registrar pedidos não o torna candidato para pedidos sobre outros projetos. ` +
-    `Responda null apenas quando nenhum projeto da lista combinar de forma plausível.\n\n` +
-    `2) Reescrever o pedido corrigindo SÓ os nomes que a transcrição errou (projetos, clientes, pessoas), usando a ` +
-    `lista e o vocabulário abaixo. Não mude o sentido, não resuma, não acrescente nada.\n\n` +
+    `Você é o Brain, o assistente pessoal do Phedro. Ele conversa com você como num WhatsApp, quase sempre por voz. ` +
+    `A transcrição erra nomes próprios: troca por palavras comuns de som parecido (ex.: "visando tarefas", "vizando" ` +
+    `ou "bizantu" = Vizantu Tarefas; "renã" = Renan; "tauper" = Tawper). Leia pelo SOM e pelo sentido, não pela grafia.\n\n` +
+    `Você coordena oito agentes que executam trabalho: ${NOMES.join(', ')}. Para cada mensagem, decida o TIPO:\n\n` +
+    `- "resposta": você mesmo responde agora, de cabeça. Use para conversa, contas, definições, dúvidas simples e ` +
+    `perguntas sobre a equipe ou sobre o que já foi conversado (use o histórico e o estado da equipe abaixo). ` +
+    `Escreva a resposta no campo "resposta", em português, curta e natural. Só use se tiver certeza: nada que ` +
+    `dependa de fatos recentes, de pesquisa ou de olhar dentro de um projeto.\n` +
+    `- "geral": precisa de pesquisa na internet ou de informação atual (notícias, leis, preços, o que mudou em tal ` +
+    `data), ou é um trabalho que não pertence a nenhum projeto (escrever um texto, analisar um anexo, comparar opções).\n` +
+    `- "projeto": é trabalho ou pergunta sobre um dos projetos da lista. Escolha o mais provável: não precisa de ` +
+    `concordância exata, basta ser a leitura mais natural. O projeto "brain" só vale quando o assunto é este próprio ` +
+    `sistema ou as anotações pessoais.\n` +
+    `- "continuar": ele fala com um agente pelo nome, ou claramente dá sequência, corrige ou pergunta sobre o ` +
+    `trabalho que um agente fez ou está fazendo, ou seja, traz uma instrução nova para ele. Ponha o nome em "agente". ` +
+    `Perguntar SOBRE um agente (o que ele está fazendo, se já terminou, quem está livre) não é "continuar": é ` +
+    `"resposta", e você responde com o estado da equipe.\n\n` +
+    `Além disso, reescreva a mensagem em "texto" corrigindo SÓ os nomes que a transcrição errou (projetos, clientes, ` +
+    `pessoas). Não mude o sentido, não resuma, não acrescente nada.\n\n` +
     `Projetos:\n${catalogo}\n\n` +
     `Vocabulário (nomes que ele costuma falar): ${lerVocabulario().join(', ')}\n\n` +
-    `Pedido transcrito:\n"""${pedido.texto}"""\n\n` +
-    `Responda SOMENTE com um JSON: {"projeto":"<id ou null>","motivo":"<uma frase>","texto":"<pedido com os nomes corrigidos>"}. ` +
+    `Estado da equipe:\n${equipe}\n\n` +
+    `Histórico recente da conversa:\n${historico || '(conversa começando agora)'}\n\n` +
+    `Mensagem nova${pedido.anexos.length ? ` (veio com ${pedido.anexos.length} anexo(s), que você não consegue abrir)` : ''}:\n` +
+    `"""${pedido.texto}"""\n\n` +
+    `Responda SOMENTE com um JSON: {"tipo":"resposta|geral|projeto|continuar","resposta":"<só no tipo resposta>",` +
+    `"projeto":"<id ou null>","agente":"<nome ou null>","texto":"<mensagem com os nomes corrigidos>","motivo":"<uma frase>"}. ` +
     `Não use ferramentas.`;
   const r = await rodar('claude', ['-p', '--model', MODELO_ROTEADOR, '--output-format', 'json'], {
     cwd: path.join(PEDIDOS, pedido.id),
@@ -186,11 +253,11 @@ async function rotear(pedido, projetos) {
     try {
       motivo = JSON.parse(r.saida).result || '';
     } catch {}
-    throw new Error(`O Claude não conseguiu rotear o pedido: ${(motivo || r.erro || r.saida).trim().slice(0, 400)}`);
+    throw new Error(`O Claude não conseguiu ler a mensagem: ${(motivo || r.erro || r.saida).trim().slice(0, 400)}`);
   }
   const texto = JSON.parse(r.saida).result ?? '';
   const achado = texto.match(/\{[\s\S]*\}/);
-  if (!achado) throw new Error('roteador não devolveu JSON: ' + texto.slice(0, 200));
+  if (!achado) throw new Error('o roteador não devolveu JSON: ' + texto.slice(0, 200));
   return JSON.parse(achado[0]);
 }
 
@@ -216,27 +283,65 @@ function regraDePublicacao(pedido, projeto) {
   );
 }
 
-function montarPrompt(pedido, projeto) {
+function montarPrompt(pedido, agente, projeto, continuando) {
+  const dir = path.join(PEDIDOS, pedido.id);
   const anexos = pedido.anexos.length
-    ? `\n\nAnexos deste pedido (leia todos antes de começar):\n${pedido.anexos.map((a) => '- ' + a).join('\n')}`
+    ? `\n\nAnexos desta mensagem (leia todos antes de começar):\n${pedido.anexos.map((a) => '- ' + a).join('\n')}`
     : '';
+  const entrega =
+    `Se produzir arquivos para entregar (documentos, imagens, planilhas), salve-os em "${path.join(dir, 'entrega')}": ` +
+    `eles aparecem na conversa como anexos.`;
+  const tom =
+    `Responda em português, em tom de conversa de WhatsApp: direto, sem cabeçalhos nem introdução, com listas curtas ` +
+    `quando ajudar.`;
+
+  // Continuação na mesma sessão: o agente já tem todo o contexto.
+  if (continuando) return `${pedido.texto}${anexos}\n\n---\n${entrega} ${tom}`;
+
+  const quem = `Você é ${agente.nome}, um dos agentes do Brain, o assistente pessoal do Phedro. Você está rodando sozinho, sem ninguém acompanhando.`;
+  if (!projeto) {
+    return (
+      `${pedido.texto}${anexos}\n\n---\n${quem}\n` +
+      `Esta mensagem não é sobre um projeto específico. Regras:\n` +
+      `1. Responda ao que foi pedido. Se depender de informação atual ou que você não tem certeza, pesquise na ` +
+      `internet antes e cite as fontes em uma linha no final.\n` +
+      `2. Não altere nenhum projeto nem repositório.\n` +
+      `3. ${entrega}\n` +
+      `4. ${tom}`
+    );
+  }
   return (
-    `${pedido.texto}${anexos}\n\n---\n` +
-    `Contexto: este pedido chegou pela Brain do Phedro e você está rodando sozinho, sem ninguém acompanhando, ` +
-    `no projeto "${projeto.nome}" (${projeto.pasta}).\n` +
+    `${pedido.texto}${anexos}\n\n---\n${quem} Projeto: "${projeto.nome}" (${projeto.pasta}).\n` +
     `Regras:\n` +
     `1. Antes de mexer, entenda o projeto: leia CLAUDE.md/AGENTS.md/README e os commits recentes (git log).\n` +
     `2. ${regraDePublicacao(pedido, projeto)}\n` +
     `3. Use as skills e ferramentas do projeto quando existirem para o tipo de entrega pedido.\n` +
     `4. Se faltar informação essencial, não invente: pare e diga o que falta.\n` +
-    `5. Termine com um resumo curto do que fez, o que ficou pendente e como conferir.`
+    `5. ${entrega}\n` +
+    `6. ${tom} Termine dizendo o que fez, o que ficou pendente e como conferir.`
   );
 }
 
-// Transforma o stream-json do Claude Code em linhas legíveis.
+// Descreve uma ação do agente do jeito que aparece na conversa.
+function descreverFerramenta(nome, i = {}) {
+  const arquivo = (p) => path.basename(String(p ?? ''));
+  const linha = (s, n = 110) => curto(String(s ?? '').split('\n')[0], n);
+  if (nome === 'Read') return `lendo ${arquivo(i.file_path)}`;
+  if (nome === 'Edit' || nome === 'Write' || nome === 'NotebookEdit') return `editando ${arquivo(i.file_path)}`;
+  if (nome === 'Bash' || nome === 'PowerShell') return `rodando: ${linha(i.description || i.command)}`;
+  if (nome === 'Grep' || nome === 'Glob') return `procurando ${linha(i.pattern, 60)}`;
+  if (nome === 'WebSearch') return `pesquisando: ${linha(i.query, 90)}`;
+  if (nome === 'WebFetch') return `abrindo ${linha(i.url, 80)}`;
+  if (nome === 'Agent' || nome === 'Task') return `delegando: ${linha(i.description, 80)}`;
+  if (nome === 'Skill') return `usando a skill ${linha(i.skill, 60)}`;
+  return nome;
+}
+
+// Lê o stream-json do Claude Code: registra os passos e guarda a sessão e o resultado.
 function leitorClaude(id) {
   let resto = '';
   let final = null;
+  let sessao = null;
   const linha = (l) => {
     let ev;
     try {
@@ -244,14 +349,11 @@ function leitorClaude(id) {
     } catch {
       return log(id, l);
     }
+    if (ev.session_id) sessao = ev.session_id;
     if (ev.type === 'assistant') {
       for (const b of ev.message?.content ?? []) {
         if (b.type === 'text' && b.text.trim()) log(id, b.text.trim());
-        if (b.type === 'tool_use') {
-          const i = b.input ?? {};
-          const alvo = i.command ?? i.file_path ?? i.pattern ?? i.description ?? i.url ?? '';
-          log(id, `  → ${b.name}${alvo ? ': ' + String(alvo).split('\n')[0].slice(0, 160) : ''}`);
-        }
+        if (b.type === 'tool_use') passo(id, descreverFerramenta(b.name, b.input));
       }
     } else if (ev.type === 'result') {
       final = { texto: ev.result ?? '', erro: !!ev.is_error };
@@ -266,161 +368,210 @@ function leitorClaude(id) {
     },
     fim() {
       if (resto.trim()) linha(resto);
-      return final;
+      return { final, sessao };
     },
   };
 }
 
-async function executar(pedido, projeto) {
+async function executar(pedido, agente, projeto, pasta, continuando) {
   const dir = path.join(PEDIDOS, pedido.id);
-  const prompt = montarPrompt(pedido, projeto);
+  fs.mkdirSync(path.join(dir, 'entrega'), { recursive: true });
   const registrar = (_, filho) => filho && emExecucao.set(pedido.id, filho);
-  let resultado;
 
-  if (pedido.agente === 'codex') {
+  if (pedido.motor === 'codex') {
+    // O Codex não retoma a sessão por aqui: a continuação leva um resumo do que veio antes.
+    const antes = continuando && agente.resumo ? `Contexto: você está continuando este trabalho anterior: "${agente.resumo}".\n\n` : '';
     const ultima = path.join(dir, 'ultima-mensagem.txt');
     const r = await rodar(
       'codex',
-      ['exec', '--approve-for-me', '--skip-git-repo-check', '-C', projeto.pasta, '--add-dir', dir, '-o', ultima, '-'],
-      { cwd: projeto.pasta, entrada: prompt, aoLer: (t, f) => (t ? log(pedido.id, t) : registrar(t, f)) },
+      ['exec', '--approve-for-me', '--skip-git-repo-check', '-C', pasta, '--add-dir', dir, '-o', ultima, '-'],
+      { cwd: pasta, entrada: antes + montarPrompt(pedido, agente, projeto, false), aoLer: (t, f) => (t ? log(pedido.id, t) : registrar(t, f)) },
     );
     if (r.erro.trim()) log(pedido.id, r.erro);
-    resultado = {
-      texto: fs.existsSync(ultima) ? fs.readFileSync(ultima, 'utf8') : '',
-      erro: r.codigo !== 0,
-      codigo: r.codigo,
-    };
-  } else {
-    const leitor = leitorClaude(pedido.id);
-    const r = await rodar(
-      'claude',
-      ['-p', '--permission-mode', 'auto', '--add-dir', dir, '--output-format', 'stream-json', '--verbose'],
-      { cwd: projeto.pasta, entrada: prompt, aoLer: (t, f) => (t ? leitor.ler(t) : registrar(t, f)) },
-    );
-    const final = leitor.fim();
-    if (r.erro.trim()) log(pedido.id, r.erro);
-    resultado = { texto: final?.texto ?? '', erro: r.codigo !== 0 || !!final?.erro, codigo: r.codigo };
+    return { texto: fs.existsSync(ultima) ? fs.readFileSync(ultima, 'utf8') : '', erro: r.codigo !== 0, codigo: r.codigo, sessao: null };
   }
-  emExecucao.delete(pedido.id);
-  return resultado;
+
+  const tentar = async (retomar) => {
+    const leitor = leitorClaude(pedido.id);
+    const args = ['-p', '--permission-mode', 'auto', '--add-dir', dir, '--output-format', 'stream-json', '--verbose'];
+    if (retomar) args.push('--resume', agente.sessao);
+    // Fora de um projeto o agente pode pesquisar na internet sem pedir permissão.
+    if (!projeto) args.push('--allowedTools', 'WebSearch', 'WebFetch');
+    const r = await rodar('claude', args, {
+      cwd: pasta,
+      entrada: montarPrompt(pedido, agente, projeto, retomar),
+      aoLer: (t, f) => (t ? leitor.ler(t) : registrar(t, f)),
+    });
+    const { final, sessao } = leitor.fim();
+    if (r.erro.trim()) log(pedido.id, r.erro);
+    return { texto: final?.texto ?? '', erro: r.codigo !== 0 || !!final?.erro, codigo: r.codigo, sessao };
+  };
+
+  let r = await tentar(continuando && !!agente.sessao);
+  // Se a sessão antiga não puder ser retomada, recomeça do zero em vez de falhar.
+  if (r.erro && continuando && agente.sessao && !r.texto && carregar(pedido.id)?.status !== 'cancelado') {
+    log(pedido.id, '[brain] não deu para retomar a sessão; começando uma nova');
+    r = await tentar(false);
+  }
+  return r;
 }
 
+function falhar(pedido, mensagem) {
+  pedido.status = 'erro';
+  pedido.erro = mensagem;
+  salvar(pedido);
+}
+
+// Lê a mensagem, decide o que ela é e, se for trabalho, entrega a um agente.
 async function processar(pedido) {
   try {
     const projetos = lerProjetos();
+    const conexoes = await statusConexoes();
+    if (!conexoes.claude) return falhar(pedido, 'O Claude não está conectado nesta máquina. Abra Conexões (a engrenagem no topo) e clique em Conectar.');
+
+    pedido.status = 'roteando';
+    salvar(pedido);
+
+    let alvo = acharAgente(pedido.para);
     let projeto = projetos.find((p) => p.id === pedido.projeto);
 
-    // Sem login não adianta tentar: o roteador usa o Claude e o executor, o agente escolhido.
-    const conexoes = await statusConexoes();
-    const precisa = [...new Set([...(projeto ? [] : ['claude']), pedido.agente || projeto?.agente || 'claude'])];
-    const faltando = precisa.filter((id) => !conexoes[id]).map((id) => CONEXOES[id].nome);
-    if (faltando.length) {
-      pedido.status = 'erro';
-      pedido.erro = `${faltando.join(' e ')} não está conectado nesta máquina. Vá em Conexões, no fim da página, e clique em Conectar.`;
-      return salvar(pedido);
-    }
-
-    if (!projeto) {
-      pedido.status = 'roteando';
-      salvar(pedido);
+    if (alvo) {
+      pedido.tipo = 'continuar';
+    } else if (projeto) {
+      pedido.tipo = 'projeto';
+    } else {
       const escolha = await rotear(pedido, projetos);
-      pedido.roteador = escolha;
-      // O agente recebe o pedido com os nomes corrigidos; o ditado original fica guardado.
+      pedido.roteador = { tipo: escolha.tipo, motivo: escolha.motivo };
+      // O agente recebe a mensagem com os nomes corrigidos; o ditado original fica guardado.
       const corrigido = typeof escolha.texto === 'string' ? escolha.texto.trim() : '';
       if (corrigido && corrigido !== pedido.texto && corrigido.length < pedido.texto.length * 1.5 + 40) {
         pedido.textoOriginal = pedido.texto;
         pedido.texto = corrigido;
       }
-      projeto = projetos.find((p) => p.id === escolha.projeto);
-      if (!projeto) {
-        pedido.status = 'sem_projeto';
-        pedido.erro = `Não identifiquei o projeto. ${escolha.motivo || ''} Escolha o projeto na lista e envie de novo.`;
+      pedido.tipo = ['resposta', 'geral', 'projeto', 'continuar'].includes(escolha.tipo) ? escolha.tipo : 'geral';
+      // O roteador não abre anexos: com anexo, quem responde é um agente.
+      if (pedido.tipo === 'resposta' && (pedido.anexos.length || !String(escolha.resposta || '').trim())) pedido.tipo = 'geral';
+
+      if (pedido.tipo === 'resposta') {
+        pedido.agente = 'Brain';
+        pedido.resultado = String(escolha.resposta).trim();
+        pedido.status = 'concluido';
         return salvar(pedido);
       }
+      if (pedido.tipo === 'continuar') {
+        alvo = acharAgente(escolha.agente);
+        // Agente sem trabalho anterior não tem o que continuar: vira um pedido novo.
+        if (!alvo || (!alvo.sessao && !alvo.ocupado)) {
+          alvo = null;
+          pedido.tipo = escolha.projeto ? 'projeto' : 'geral';
+        }
+      }
+      if (pedido.tipo === 'projeto') {
+        projeto = projetos.find((p) => p.id === escolha.projeto);
+        if (!projeto) pedido.tipo = 'geral';
+      }
+    }
+
+    if (alvo) {
+      pedido.para = alvo.nome;
+      pedido.projeto = alvo.projeto;
+    } else if (pedido.tipo === 'projeto') {
+      if (!projeto.ativo) return falhar(pedido, `O projeto "${projeto.nome}" está indisponível: ${projeto.motivo || 'sem motivo cadastrado'}.`);
       pedido.projeto = projeto.id;
+    } else {
+      pedido.projeto = null;
     }
-    if (!projeto.ativo) {
-      pedido.status = 'erro';
-      pedido.erro = `O projeto "${projeto.nome}" está indisponível: ${projeto.motivo || 'sem motivo cadastrado'}.`;
-      return salvar(pedido);
-    }
-    // Primeira vez do projeto nesta máquina: clona do GitHub.
-    if (!fs.existsSync(projeto.pasta) && projeto.repo) {
-      log(pedido.id, `[brain] clonando ${projeto.repo} em ${projeto.pasta}`);
-      fs.mkdirSync(path.dirname(projeto.pasta), { recursive: true });
-      const c = await rodar('gh', ['repo', 'clone', projeto.repo, projeto.pasta], { cwd: path.dirname(projeto.pasta) });
-      if (c.codigo !== 0) {
-        pedido.status = 'erro';
-        pedido.erro = `Não consegui clonar ${projeto.repo}: ${(c.erro || c.saida).slice(0, 300)}`;
-        return salvar(pedido);
-      }
-    }
-    if (!fs.existsSync(projeto.pasta)) {
-      pedido.status = 'erro';
-      pedido.erro = `A pasta do projeto não existe: ${projeto.pasta}`;
-      return salvar(pedido);
-    }
-
-    pedido.status = 'executando';
-    pedido.agente ||= projeto.agente || 'claude';
+    pedido.status = 'na_fila';
     salvar(pedido);
-    log(pedido.id, `[brain] ${pedido.agente} em ${projeto.pasta}`);
-
-    const r = await executar(pedido, projeto);
-    const atual = carregar(pedido.id);
-    if (atual?.status === 'cancelado') return;
-    pedido.resultado = r.texto;
-    pedido.status = r.erro ? 'erro' : 'concluido';
-    if (r.erro) pedido.erro = `O agente terminou com erro (código ${r.codigo}). Veja o log.`;
-    salvar(pedido);
+    fila.push(pedido.id);
+    despachar();
   } catch (e) {
-    emExecucao.delete(pedido.id);
-    pedido.status = 'erro';
-    pedido.erro = String(e.message || e);
-    salvar(pedido);
+    falhar(pedido, String(e.message || e));
   }
 }
 
-// ---------- HTTP ----------
-
-function responder(res, status, corpo) {
-  const json = JSON.stringify(corpo);
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
-  res.end(json);
+// Entrega os pedidos da fila aos agentes livres. Uma continuação espera o agente dela.
+function despachar() {
+  for (const id of [...fila]) {
+    const pedido = carregar(id);
+    if (!pedido || pedido.status !== 'na_fila') {
+      fila.splice(fila.indexOf(id), 1);
+      continue;
+    }
+    let agente;
+    if (pedido.para) {
+      agente = acharAgente(pedido.para);
+      if (agente.ocupado) continue;
+    } else {
+      agente = [...agentes.values()].filter((a) => !a.ocupado).sort((a, b) => a.usadoEm - b.usadoEm)[0];
+      if (!agente) break;
+    }
+    fila.splice(fila.indexOf(id), 1);
+    agente.ocupado = pedido.id;
+    trabalhar(pedido, agente);
+  }
 }
 
-function lerCorpo(req) {
-  return new Promise((resolve, reject) => {
-    let tamanho = 0;
-    const partes = [];
-    req.on('data', (d) => {
-      tamanho += d.length;
-      if (tamanho > LIMITE_CORPO) {
-        reject(new Error('pedido grande demais (limite de 60 MB)'));
-        req.destroy();
-      } else partes.push(d);
-    });
-    req.on('end', () => resolve(Buffer.concat(partes).toString('utf8')));
-    req.on('error', reject);
-  });
-}
+async function trabalhar(pedido, agente) {
+  try {
+    const continuando = !!pedido.para;
+    const projeto = lerProjetos().find((p) => p.id === pedido.projeto) ?? null;
+    let pasta;
 
-// Um site qualquer aberto no navegador não pode disparar agentes: só aceita
-// pedidos vindos da própria página (mesma origem, JSON e cabeçalho próprio).
-function origemConfiavel(req) {
-  const host = (req.headers.host || '').split(':')[0];
-  if (!HOSTS.has(host)) return false;
-  if (req.method === 'GET') return true;
-  const origem = req.headers.origin;
-  if (origem && !HOSTS.has(new URL(origem).hostname)) return false;
-  return req.headers['x-brain'] === '1' && (req.headers['content-type'] || '').startsWith('application/json');
-}
+    if (continuando && agente.pasta && fs.existsSync(agente.pasta)) {
+      pasta = agente.pasta;
+    } else if (projeto) {
+      // Primeira vez do projeto nesta máquina: clona do GitHub.
+      if (!fs.existsSync(projeto.pasta) && projeto.repo) {
+        passo(pedido.id, `clonando ${projeto.repo}`);
+        fs.mkdirSync(path.dirname(projeto.pasta), { recursive: true });
+        const c = await rodar('gh', ['repo', 'clone', projeto.repo, projeto.pasta], { cwd: path.dirname(projeto.pasta) });
+        if (c.codigo !== 0) return falhar(pedido, `Não consegui clonar ${projeto.repo}: ${(c.erro || c.saida).slice(0, 300)}`);
+      }
+      if (!fs.existsSync(projeto.pasta)) return falhar(pedido, `A pasta do projeto não existe: ${projeto.pasta}`);
+      pasta = projeto.pasta;
+    } else {
+      pasta = path.join(DADOS, 'geral');
+      fs.mkdirSync(pasta, { recursive: true });
+    }
 
-function novoId() {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, '0');
-  const data = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
-  return `${data}-${Math.random().toString(36).slice(2, 6)}`;
+    pedido.motor = pedido.motor || (continuando && agente.motor) || projeto?.motor || projeto?.agente || 'claude';
+    const conexoes = await statusConexoes();
+    if (!conexoes[pedido.motor]) return falhar(pedido, `${CONEXOES[pedido.motor].nome} não está conectado nesta máquina. Abra Conexões e clique em Conectar.`);
+
+    pedido.agente = agente.nome;
+    pedido.status = 'executando';
+    pedido.iniciadoEm = new Date().toISOString();
+    salvar(pedido);
+    log(pedido.id, `[brain] ${agente.nome} (${pedido.motor}) em ${pasta}`);
+
+    // Uma continuação soma ao resumo; um pedido novo substitui.
+    Object.assign(agente, { projeto: pedido.projeto, pasta, motor: pedido.motor, usadoEm: Date.now(), resumo: continuando && agente.resumo ? `${agente.resumo} / depois: ${curto(pedido.texto, 120)}` : curto(pedido.texto, 200) });
+    if (!continuando) agente.sessao = null;
+    salvarAgentes();
+
+    const r = await executar(pedido, agente, projeto, pasta, continuando);
+    if (r.sessao) agente.sessao = r.sessao;
+
+    const dirEntrega = path.join(PEDIDOS, pedido.id, 'entrega');
+    const entregas = fs.readdirSync(dirEntrega).map((nome) => ({ nome, tamanho: fs.statSync(path.join(dirEntrega, nome)).size }));
+
+    if (carregar(pedido.id)?.status === 'cancelado') return;
+    pedido.resultado = r.texto;
+    pedido.entregas = entregas;
+    pedido.status = r.erro ? 'erro' : 'concluido';
+    if (r.erro) pedido.erro = r.texto ? 'O agente terminou com erro.' : `O agente terminou com erro (código ${r.codigo}) e sem resposta. Veja o log.`;
+    salvar(pedido);
+  } catch (e) {
+    if (carregar(pedido.id)?.status !== 'cancelado') falhar(pedido, String(e.message || e));
+  } finally {
+    emExecucao.delete(pedido.id);
+    atividade.delete(pedido.id);
+    agente.ocupado = null;
+    agente.usadoEm = Date.now();
+    salvarAgentes();
+    despachar();
+  }
 }
 
 // ---------- transcrição de áudio ----------
@@ -668,6 +819,47 @@ async function webhookWhatsapp(req, res, caminho) {
   }
 }
 
+// ---------- conversa (o que a página mostra) ----------
+
+function verPedido(p, projetos) {
+  return {
+    id: p.id,
+    texto: p.texto,
+    textoOriginal: p.textoOriginal,
+    arquivos: p.arquivos ?? [],
+    criadoEm: p.criadoEm,
+    iniciadoEm: p.iniciadoEm,
+    atualizadoEm: p.atualizadoEm,
+    status: p.status,
+    tipo: p.tipo,
+    agente: p.agente,
+    motor: p.motor,
+    para: p.para,
+    projeto: p.projeto,
+    projetoNome: projetos.find((x) => x.id === p.projeto)?.nome ?? null,
+    resultado: p.resultado,
+    erro: p.erro,
+    entregas: p.entregas ?? [],
+    passos: atividade.get(p.id)?.slice(-6) ?? [],
+  };
+}
+
+const TIPOS_DE_ARQUIVO = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', pdf: 'application/pdf' };
+const extensao = (nome) => path.extname(nome).slice(1).toLowerCase();
+
+// Imagens e PDF abrem no navegador; o resto sempre baixa (nunca roda como página).
+function enviarArquivo(res, caminho) {
+  if (!fs.existsSync(caminho) || !fs.statSync(caminho).isFile()) return responder(res, 404, { erro: 'arquivo não encontrado' });
+  const tipo = TIPOS_DE_ARQUIVO[extensao(caminho)];
+  res.writeHead(200, {
+    'content-type': tipo || 'application/octet-stream',
+    'content-disposition': `${tipo ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(path.basename(caminho))}`,
+    'x-content-type-options': 'nosniff',
+    'cache-control': 'private, max-age=3600',
+  });
+  fs.createReadStream(caminho).pipe(res);
+}
+
 const servidor = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
@@ -696,7 +888,27 @@ const servidor = http.createServer(async (req, res) => {
         lerProjetos().map(({ id, nome, ativo, motivo, descricao }) => ({ id, nome, ativo, motivo, descricao })),
       );
     }
-    if (rota === 'GET /api/pedidos') return responder(res, 200, listar().slice(0, 50));
+
+    if (rota === 'GET /api/conversa') {
+      const projetos = lerProjetos();
+      return responder(res, 200, {
+        pedidos: listar().slice(0, 80).reverse().map((p) => verPedido(p, projetos)),
+        agentes: [...agentes.values()].map((a) => ({ nome: a.nome, ocupado: a.ocupado, temSessao: !!a.sessao, projeto: a.projeto })),
+      });
+    }
+
+    // Foto do agente: avatares/<nome sem acento>.(jpg|png|webp), se existir.
+    const avatar = url.pathname.match(/^\/avatares\/([a-z]+)$/);
+    if (avatar && req.method === 'GET') {
+      const achado = ['jpg', 'jpeg', 'png', 'webp'].map((e) => path.join(RAIZ, 'avatares', `${avatar[1]}.${e}`)).find((c) => fs.existsSync(c));
+      return achado ? enviarArquivo(res, achado) : responder(res, 404, { erro: 'sem foto' });
+    }
+
+    const arquivo = url.pathname.match(/^\/api\/arquivo\/([\w-]+)\/(anexos|entrega)\/([^/]+)$/);
+    if (arquivo && req.method === 'GET') {
+      const nome = path.basename(decodeURIComponent(arquivo[3]));
+      return enviarArquivo(res, path.join(PEDIDOS, arquivo[1], arquivo[2], nome));
+    }
 
     const comId = url.pathname.match(/^\/api\/pedidos\/([\w-]+)(\/cancelar)?$/);
     if (comId && req.method === 'GET' && !comId[2]) {
@@ -708,42 +920,47 @@ const servidor = http.createServer(async (req, res) => {
     if (comId && req.method === 'POST' && comId[2]) {
       const pedido = carregar(comId[1]);
       if (!pedido) return responder(res, 404, { erro: 'pedido não encontrado' });
-      const filho = emExecucao.get(pedido.id);
-      if (!filho) return responder(res, 409, { erro: 'este pedido não está em execução' });
+      if (!['roteando', 'na_fila', 'executando'].includes(pedido.status)) return responder(res, 409, { erro: 'este pedido não está em andamento' });
       pedido.status = 'cancelado';
       salvar(pedido);
-      // No Windows o agente abre processos filhos; /T encerra a árvore toda.
-      if (process.platform === 'win32') spawn('taskkill', ['/PID', String(filho.pid), '/T', '/F'], { windowsHide: true });
-      else filho.kill('SIGTERM');
+      const filho = emExecucao.get(pedido.id);
+      if (filho) matar(filho);
       return responder(res, 200, { ok: true });
     }
 
     if (rota === 'POST /api/pedidos') {
       const corpo = JSON.parse(await lerCorpo(req));
-      const texto = String(corpo.texto || '').trim();
-      if (!texto) return responder(res, 400, { erro: 'escreva ou dite o pedido' });
+      const listaAnexos = Array.isArray(corpo.anexos) ? corpo.anexos : [];
+      const texto = String(corpo.texto || '').trim() || (listaAnexos.length ? 'Veja o anexo.' : '');
+      if (!texto) return responder(res, 400, { erro: 'escreva ou dite a mensagem' });
       const id = novoId();
       const dirAnexos = path.join(PEDIDOS, id, 'anexos');
       fs.mkdirSync(dirAnexos, { recursive: true });
       const anexos = [];
-      for (const a of corpo.anexos || []) {
+      const arquivos = [];
+      for (const a of listaAnexos) {
         const nome = path.basename(String(a.nome || 'anexo')).replace(/[<>:"/\\|?*]/g, '_');
         const destino = path.join(dirAnexos, nome);
-        fs.writeFileSync(destino, Buffer.from(String(a.base64 || ''), 'base64'));
+        const conteudo = Buffer.from(String(a.base64 || ''), 'base64');
+        fs.writeFileSync(destino, conteudo);
         anexos.push(destino);
+        arquivos.push({ nome, tamanho: conteudo.length });
       }
       const pedido = {
         id,
         texto,
-        agente: corpo.agente === 'codex' ? 'codex' : corpo.agente === 'claude' ? 'claude' : null,
+        // motor: a ferramenta (claude ou codex); agente: quem da equipe pegou o pedido.
+        motor: corpo.motor === 'codex' ? 'codex' : corpo.motor === 'claude' ? 'claude' : null,
         projeto: corpo.projeto && corpo.projeto !== 'auto' ? String(corpo.projeto) : null,
+        para: acharAgente(corpo.para)?.nome ?? null,
         anexos,
+        arquivos,
         status: 'recebido',
         criadoEm: new Date().toISOString(),
       };
       salvar(pedido);
       processar(pedido);
-      return responder(res, 201, pedido);
+      return responder(res, 201, { id });
     }
 
     responder(res, 404, { erro: 'rota não encontrada' });

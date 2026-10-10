@@ -1,22 +1,31 @@
 # Brain
 
-Meu agente pessoal. Recebe um pedido por texto, áudio ou anexo, descobre de qual
-projeto estou falando, abre uma sessão do Claude Code ou do Codex na pasta dele e
-executa em modo automático.
+Meu assistente pessoal: uma conversa única, no estilo do WhatsApp, em que eu
+pergunto qualquer coisa ou peço trabalho nos meus projetos, por texto, áudio ou
+anexo. Uma equipe de oito agentes executa os pedidos em paralelo.
 
 O repositório também guarda o vault de anotações (`Reels/`, `Carrosséis/`,
 `Pessoal/`), que continua sendo aberto pelo Obsidian.
 
-> Estado: primeira versão. O fluxo de pedido ainda não foi validado de ponta a
-> ponta e o WhatsApp está em modo captura (só grava o que chega do grupo).
+> Estado: em construção. O WhatsApp está em modo captura (só grava o que chega
+> do grupo).
 
 ## Como funciona
 
-1. **Entrada:** site (texto, ditado, anexos) ou webhook do WhatsApp.
-2. **Roteador:** um Claude rápido lê o pedido e o `projetos.json` e escolhe o projeto.
-3. **Executor:** `claude -p --permission-mode auto` ou `codex exec --approve-for-me`
-   na pasta do projeto. Se a pasta não existir, o projeto é clonado do GitHub.
-4. **Acompanhamento:** lista de pedidos com status, log ao vivo, resultado e cancelar.
+1. **Entrada:** texto, ditado (gravado e transcrito no servidor) e anexos.
+2. **Brain (roteador):** um Claude rápido lê a mensagem com o histórico e o estado
+   da equipe, corrige nomes que a transcrição errou e decide o tipo:
+   - `resposta`: ele mesmo responde (conversa, contas, dúvidas simples);
+   - `geral`: um agente responde, pesquisando na internet se precisar;
+   - `projeto`: um agente trabalha na pasta do projeto (clonado na primeira vez);
+   - `continuar`: a mensagem vai para o agente citado, na mesma sessão dele.
+3. **Agentes:** Junior, Trixie, Flocos, Ágato, Guará, Marsha, Dino e Paçoca. Até
+   oito trabalham ao mesmo tempo; com todos ocupados, o pedido espera na fila.
+   Cada um roda `claude -p --permission-mode auto` ou `codex exec --approve-for-me`.
+
+Arquivos que o agente salvar na pasta `entrega` do pedido aparecem na conversa
+como anexos. A foto de cada agente fica em `avatares/<nome sem acento>.jpg` (ou
+`.png`/`.webp`); sem foto, aparece a inicial.
 
 ## Arquivos
 
@@ -25,6 +34,8 @@ O repositório também guarda o vault de anotações (`Reels/`, `Carrosséis/`,
 | `server.mjs` | Servidor (Node puro, sem dependências). |
 | `index.html` | A página. |
 | `projetos.json` | Cadastro dos projetos. |
+| `vocabulario.json` | Nomes próprios que a transcrição costuma errar. |
+| `avatares/` | Fotos dos agentes. |
 | `Dockerfile`, `docker-entrypoint.sh` | Imagem para a VPS. |
 | `.env.example` | Todas as variáveis de configuração. |
 
@@ -35,7 +46,7 @@ O repositório também guarda o vault de anotações (`Reels/`, `Carrosséis/`,
 | `id` | Nome da pasta em `~/projetos/<id>`. |
 | `nome`, `apelidos`, `descricao` | O que o roteador usa para reconhecer o projeto. |
 | `repo` | Repositório no GitHub, clonado na primeira vez. |
-| `agente` | `claude` ou `codex` quando o pedido não escolhe. |
+| `motor` | `claude` ou `codex` quando a mensagem não escolhe. |
 | `publicar` | `main` (padrão: commit e push direto), `branch` (branch + pull request) ou `nao`. |
 | `ativo`, `motivo` | `false` tira o projeto de uso e explica por quê. |
 | `pasta` | Só se o projeto não estiver em `~/projetos/<id>`. |

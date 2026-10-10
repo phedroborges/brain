@@ -13,7 +13,7 @@
     ],
     "repo": "phedroborges/vizantu-tarefas",
     "descricao": "Sistema de tarefas da Vizantu (Next.js + Supabase). Projetos de clientes (ex.: Dr. Lourival), tarefas da equipe (ex.: Cynthia), planos e fila de demandas.",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "vizantu-documentacao",
@@ -25,7 +25,7 @@
     ],
     "repo": "phedroborges/vizantu-documentacao",
     "descricao": "Repositório central de documentação da Vizantu: POPs, contextos de clientes, decisões, processos, skills e agentes.",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "vizantu-planos",
@@ -35,7 +35,7 @@
     ],
     "repo": "phedroborges/vizantu-planos",
     "descricao": "Sistema de planos da Vizantu (TypeScript).",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "tawper-os",
@@ -48,7 +48,7 @@
     ],
     "repo": "phedroborges/tawper-os",
     "descricao": "Sistema geral da Tawper (TypeScript).",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "sistema-de-doacao",
@@ -59,7 +59,7 @@
     ],
     "repo": "phedroborges/sistema-de-doacao",
     "descricao": "Sistema de doação (TypeScript).",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "fenix-os",
@@ -70,7 +70,7 @@
     ],
     "repo": "phedroborges/fenix-os",
     "descricao": "Sistema da Fênix, com notificações e PWA.",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "destra",
@@ -81,7 +81,7 @@
     ],
     "repo": "phedroborges/destra",
     "descricao": "Sistema de organização de processos de armas para despachantes (TypeScript).",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "consultoria",
@@ -106,7 +106,7 @@
     ],
     "repo": "phedroborges/brain",
     "descricao": "Este sistema (o agente pessoal que recebe pedidos e abre sessões nos projetos) e o vault de anotações pessoais (Reels, Carrosséis, Pessoal).",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "site-renan-liscano",
@@ -120,7 +120,7 @@
     ],
     "repo": "phedroborges/site-renan-liscano",
     "descricao": "Site institucional (Next.js) com landing pages de serviços do advogado Renan Liscano. Os textos ficam em conteudo/ e lib/paginas/.",
-    "agente": "claude"
+    "motor": "claude"
   },
   {
     "id": "casa-caramelo",
