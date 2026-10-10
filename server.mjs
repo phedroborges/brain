@@ -116,9 +116,19 @@ for (const p of listar()) {
 
 // ---------- roteador ----------
 
+// Os agentes usam a assinatura (login do Claude Code e do Codex), nunca a API
+// paga por uso: as chaves de API não chegam até eles, mesmo que existam no
+// ambiente para outra finalidade (ex.: OPENAI_API_KEY para transcrever áudio).
+const CHAVES_DE_API = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'OPENAI_API_KEY', 'CODEX_API_KEY'];
+function ambienteDoAgente() {
+  const env = { ...process.env };
+  for (const chave of CHAVES_DE_API) delete env[chave];
+  return env;
+}
+
 function rodar(cmd, args, { cwd, entrada, aoLer }) {
   return new Promise((resolve) => {
-    const filho = spawn(cmd, args, { cwd, windowsHide: true });
+    const filho = spawn(cmd, args, { cwd, windowsHide: true, env: ambienteDoAgente() });
     let saida = '';
     let erro = '';
     filho.stdout.on('data', (d) => {
