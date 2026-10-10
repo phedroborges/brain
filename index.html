@@ -250,6 +250,11 @@
         <p class="dica">Contas usadas pelos agentes nesta máquina. Ficam gravadas no servidor e valem para todos os seus aparelhos.</p>
       </div>
 
+      <div class="secao">
+        <h3>WhatsApp</h3>
+        <div id="whatsapp">Verificando…</div>
+      </div>
+
       <div class="secao" id="secaoSenha">
         <h3>Senha</h3>
         <label class="campo" style="margin-top:0">Senha atual<input id="senhaAtual" type="password" autocomplete="current-password"></label>
@@ -427,7 +432,8 @@ function baloes(p) {
   const dele = `<div class="linha dele" id="resp-${p.id}">${avatar(nome, 'p')}<div class="balao">
       <div class="cabeca"><span class="nome" style="color:${cor(nome)}" ${nome !== 'Brain' ? `data-para="${escapar(nome)}"` : ''}>${escapar(nome)}</span>
         ${p.projetoNome ? `<span class="tag projeto">${escapar(p.projetoNome)}</span>` : ''}
-        ${p.motor === 'codex' ? '<span class="tag">Codex</span>' : ''}</div>
+        ${p.motor === 'codex' ? '<span class="tag">Codex</span>' : ''}
+        ${p.origem === 'whatsapp' ? '<span class="tag">WhatsApp</span>' : ''}</div>
       ${corpo}
       ${andando ? '' : `<span class="rodape">${hora(p.atualizadoEm || p.criadoEm)}</span>`}
       ${acoes.length ? `<div class="acoes">${acoes.join('')}</div>` : ''}
@@ -686,7 +692,7 @@ function desenharConfig() {
       <div style="color:${cor(n)}; font-weight:600">${escapar(n)}</div>
       ${fotos[slug(n)] ? `<button class="botao texto" data-remover-foto="${slug(n)}">remover</button>` : ''}</div>`).join('');
 }
-function abrirConfig() { $('config').hidden = false; $('meuNome').value = perfil.nome; desenharConfig(); atualizarConexoes(); }
+function abrirConfig() { $('config').hidden = false; $('meuNome').value = perfil.nome; desenharConfig(); atualizarConexoes(); atualizarWhatsapp(); }
 $('abrirConfig').onclick = abrirConfig;
 $('abrirConfigLateral').onclick = abrirConfig;
 $('fecharConfig').onclick = () => ($('config').hidden = true);
@@ -730,6 +736,41 @@ $('trocarSenha').onclick = async () => {
     await api('/api/senha', { atual: $('senhaAtual').value, nova: $('senhaNova').value });
     $('senhaAtual').value = $('senhaNova').value = '';
     aviso.className = 'ok'; aviso.textContent = 'senha trocada';
+  } catch (x) { aviso.className = 'nao'; aviso.textContent = x.message; }
+};
+
+// ----- WhatsApp: o grupo de comandos -----
+let capturasWhatsapp = '';
+async function atualizarWhatsapp() {
+  let w;
+  try { w = await api('/api/whatsapp'); } catch { return; }
+  capturasWhatsapp = w.capturas.join('\n\n---\n\n');
+  if (!w.configurado) {
+    $('whatsapp').innerHTML = `<div class="nao">Não configurado.</div><p class="dica">Faltam as variáveis: ${escapar(w.faltando.join(', '))}.</p>`;
+    return;
+  }
+  $('whatsapp').innerHTML = `
+    <div><span class="ok">Configurado.</span> ${w.ultimoEvento ? 'Última mensagem do grupo: ' + new Date(w.ultimoEvento).toLocaleString('pt-BR') + '.' : 'Ainda não chegou nenhuma mensagem do grupo.'}</div>
+    ${w.ultimoErro ? `<div class="nao" style="margin-top:6px">Último erro: ${escapar(w.ultimoErro)}</div>` : ''}
+    ${w.transcricao ? '' : '<div class="nao" style="margin-top:6px">Sem OPENAI_API_KEY: áudios não serão transcritos.</div>'}
+    <label class="campo">Endereço do webhook (cole no painel da Stevo, com o evento MESSAGE)<input readonly value="${escapar(w.webhook)}" onfocus="this.select()"></label>
+    <div class="fila">
+      <button class="botao" data-wa="copiar">Copiar endereço</button>
+      <button class="botao leve" data-wa="teste">Enviar teste ao grupo</button>
+      ${w.capturas.length ? '<button class="botao texto" data-wa="capturas">copiar últimas mensagens recebidas</button>' : ''}
+      <span id="avisoWhatsapp"></span>
+    </div>
+    <p class="dica">Só o que você escreve no grupo de comandos vira pedido. A resposta volta para o mesmo grupo.</p>`;
+}
+$('whatsapp').onclick = async (e) => {
+  const acao = e.target.dataset.wa;
+  if (!acao) return;
+  const aviso = $('avisoWhatsapp');
+  try {
+    if (acao === 'copiar') { await copiar($('whatsapp').querySelector('input').value); aviso.textContent = 'copiado'; }
+    if (acao === 'capturas') { await copiar(capturasWhatsapp); aviso.textContent = 'copiado'; }
+    if (acao === 'teste') { aviso.textContent = 'enviando…'; await api('/api/whatsapp/teste', {}); aviso.textContent = 'enviado; confira o grupo'; }
+    aviso.className = 'ok';
   } catch (x) { aviso.className = 'nao'; aviso.textContent = x.message; }
 };
 

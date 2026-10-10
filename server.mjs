@@ -91,6 +91,7 @@ const arquivoLog = (id) => path.join(PEDIDOS, id, 'saida.log');
 function salvar(pedido) {
   pedido.atualizadoEm = new Date().toISOString();
   fs.writeFileSync(arquivoPedido(pedido.id), JSON.stringify(pedido, null, 2));
+  avisarWhatsapp(pedido);
 }
 
 function carregar(id) {
@@ -119,7 +120,8 @@ for (const p of listar()) {
   if (['recebido', 'roteando', 'na_fila', 'executando'].includes(p.status)) {
     p.status = 'interrompido';
     p.erro = 'O servidor do Brain reiniciou durante a execução.';
-    salvar(p);
+    // Grava direto: nesta altura o resto do servidor (avisos do WhatsApp) ainda não foi carregado.
+    fs.writeFileSync(arquivoPedido(p.id), JSON.stringify(p, null, 2));
   }
 }
 
@@ -869,11 +871,174 @@ async function entrar(req, res) {
   responder(res, 200, { ok: true });
 }
 
-// ---------- WhatsApp (entrada) ----------
-// Por enquanto só captura: guarda em disco o que chegar do grupo de comandos,
-// para conhecermos o formato real antes de transformar em pedido.
+// ---------- WhatsApp ----------
+// O grupo de comandos funciona como a conversa do site: o que EU escrevo lá
+// vira pedido, e a resposta volta para o mesmo grupo. Mensagens de outros
+// grupos, de outros contatos e de outras pessoas no grupo são descartadas.
+//
+// O formato do webhook da Stevo não está documentado; a leitura abaixo segue o
+// formato das bibliotecas em que ela se baseia e procura os campos de forma
+// tolerante. As últimas mensagens do grupo ficam guardadas para conferência.
 
 const CAPTURAS = path.join(DADOS, 'whatsapp');
+const MARCA = '\u200b'; // caractere invisível no começo do que o Brain envia, para ele não ler a própria resposta
+const idsVistos = new Set(); // mensagens já tratadas (o webhook pode repetir)
+const estadoWhatsapp = { ultimoEvento: null, ultimoErro: null };
+
+const whatsappConfigurado = () => !!(cfg('STEVO_API_URL') && cfg('STEVO_API_KEY') && cfg('BRAIN_WHATSAPP_GRUPO') && cfg('BRAIN_WEBHOOK_TOKEN'));
+
+async function stevo(caminho, corpo) {
+  const r = await fetch(cfg('STEVO_API_URL').replace(/\/+$/, '') + caminho, {
+    method: corpo ? 'POST' : 'GET',
+    headers: { apikey: cfg('STEVO_API_KEY'), 'content-type': 'application/json' },
+    body: corpo ? JSON.stringify(corpo) : undefined,
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(`Stevo respondeu ${r.status}: ${JSON.stringify(j).slice(0, 200)}`);
+  return j;
+}
+
+// Procura em qualquer profundidade; as chaves são comparadas sem diferenciar maiúsculas.
+function buscar(obj, teste, profundidade = 0) {
+  if (!obj || typeof obj !== 'object' || profundidade > 8) return undefined;
+  for (const [chave, valor] of Object.entries(obj)) {
+    if (teste(chave.toLowerCase(), valor)) return valor;
+  }
+  for (const valor of Object.values(obj)) {
+    const achado = buscar(valor, teste, profundidade + 1);
+    if (achado !== undefined) return achado;
+  }
+  return undefined;
+}
+const campo = (obj, nome) => buscar(obj, (chave) => chave === nome.toLowerCase());
+
+// Markdown dos agentes -> formatação do WhatsApp.
+function paraWhatsapp(texto) {
+  return String(texto ?? '')
+    .replace(/^#{1,6}\s+(.*)$/gm, '*$1*')
+    .replace(/\*\*([^*\n]+)\*\*/g, '*$1*')
+    .replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1: $2');
+}
+
+async function enviarWhatsapp(texto) {
+  if (!whatsappConfigurado()) return;
+  // O WhatsApp corta mensagens muito longas: envia em partes.
+  const partes = String(texto).match(/[\s\S]{1,3500}(?:\n|$)|[\s\S]{1,3500}/g) ?? [];
+  for (const parte of partes) {
+    try {
+      const r = await stevo('/send/text', { number: cfg('BRAIN_WHATSAPP_GRUPO'), text: MARCA + parte.trim() });
+      const id = buscar(r, (chave, valor) => (chave === 'id' || chave === 'messageid') && typeof valor === 'string');
+      if (id) idsVistos.add(id);
+    } catch (e) {
+      estadoWhatsapp.ultimoErro = `envio: ${e.message}`;
+    }
+  }
+}
+
+// Avisa no grupo quando um pedido vindo de lá começa e quando termina.
+const avisados = new Map(); // id do pedido -> etapas já avisadas
+function avisarWhatsapp(pedido) {
+  if (pedido.origem !== 'whatsapp') return;
+  const feitos = avisados.get(pedido.id) ?? new Set();
+  avisados.set(pedido.id, feitos);
+  const projeto = pedido.projeto ? lerProjetos().find((p) => p.id === pedido.projeto)?.nome : null;
+  const quem = `*${pedido.agente || 'Brain'}*${projeto ? ` · ${projeto}` : ''}`;
+
+  if (pedido.status === 'executando' && pedido.agente && !feitos.has('inicio')) {
+    feitos.add('inicio');
+    enviarWhatsapp(`${quem}\n_pegou o pedido e está trabalhando_`);
+  }
+  if (['concluido', 'erro', 'interrompido'].includes(pedido.status) && !feitos.has('fim')) {
+    feitos.add('fim');
+    const entregas = (pedido.entregas ?? []).map((e) => `📎 ${e.nome}`).join('\n');
+    const site = [...HOSTS].find((h) => h.includes('.') && !/^[\d.]+$/.test(h) && !h.endsWith('.localhost'));
+    const corpo = [
+      paraWhatsapp(pedido.resultado),
+      pedido.erro ? `⚠️ ${pedido.erro}` : '',
+      entregas ? `${entregas}\n${site ? `Arquivos em https://${site}` : 'Arquivos disponíveis no site.'}` : '',
+    ].filter(Boolean).join('\n\n');
+    enviarWhatsapp(`${quem}\n\n${corpo || '(sem resposta)'}`);
+    avisados.delete(pedido.id);
+  }
+}
+
+async function baixarMidia(mensagem) {
+  const r = await stevo('/message/downloadimage', { message: mensagem });
+  const base64 = buscar(r, (chave, valor) => typeof valor === 'string' && valor.length > 200 && /^(data:[^,]+,)?[A-Za-z0-9+/=\s]+$/.test(valor.slice(0, 400)));
+  if (!base64) throw new Error('a Stevo não devolveu o arquivo');
+  return Buffer.from(base64.replace(/^data:[^,]+,/, ''), 'base64');
+}
+
+const EXTENSOES = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a' };
+
+// Transforma uma mensagem do grupo em pedido.
+async function receberDoWhatsapp(payload) {
+  const info = buscar(payload, (chave, valor) => chave === 'info' && valor && typeof valor === 'object');
+  const mensagem = buscar(payload, (chave, valor) => chave === 'message' && valor && typeof valor === 'object');
+  if (!info || !mensagem) return;
+
+  const conversa = String(campo(info, 'chat') ?? '');
+  const minha = campo(info, 'isfromme') === true;
+  const id = String(campo(info, 'id') ?? '');
+  // Só o grupo de comandos, e só o que o dono do número escreveu.
+  if (!conversa.startsWith(cfg('BRAIN_WHATSAPP_GRUPO').split('@')[0]) || !minha) return;
+  if (id && idsVistos.has(id)) return;
+  if (id) idsVistos.add(id);
+
+  let texto = String(campo(mensagem, 'conversation') ?? campo(campo(mensagem, 'extendedtextmessage'), 'text') ?? '');
+  if (texto.startsWith(MARCA)) return; // é uma resposta do próprio Brain
+
+  const audio = campo(mensagem, 'audiomessage');
+  const documento = campo(mensagem, 'documentmessage');
+  const imagem = campo(mensagem, 'imagemessage');
+  const midia = documento || imagem;
+  if (!texto && midia) texto = String(campo(midia, 'caption') ?? '');
+  if (texto.startsWith(MARCA)) return;
+  if (!texto && !audio && !midia) return;
+
+  const idPedido = novoId();
+  const dirAnexos = path.join(PEDIDOS, idPedido, 'anexos');
+  fs.mkdirSync(dirAnexos, { recursive: true });
+  const anexos = [];
+  const arquivos = [];
+  let textoOriginal;
+
+  try {
+    if (audio) {
+      if (!cfg('OPENAI_API_KEY')) return enviarWhatsapp('*Brain*\n\n⚠️ Recebi um áudio, mas a transcrição está desligada (falta a OPENAI_API_KEY).');
+      const som = await baixarMidia(mensagem);
+      texto = await transcrever(som.toString('base64'), String(campo(audio, 'mimetype') ?? 'audio/ogg'));
+      if (!texto) return enviarWhatsapp('*Brain*\n\n⚠️ Não consegui entender o áudio.');
+    }
+    if (midia) {
+      const conteudo = await baixarMidia(mensagem);
+      const tipo = String(campo(midia, 'mimetype') ?? '').split(';')[0];
+      const nome = path.basename(String(campo(midia, 'filename') ?? campo(midia, 'title') ?? `anexo-${idPedido}.${EXTENSOES[tipo] || 'bin'}`)).replace(/[<>:"/\\|?*]/g, '_');
+      fs.writeFileSync(path.join(dirAnexos, nome), conteudo);
+      anexos.push(path.join(dirAnexos, nome));
+      arquivos.push({ nome, tamanho: conteudo.length });
+    }
+  } catch (e) {
+    estadoWhatsapp.ultimoErro = `recebimento: ${e.message}`;
+    return enviarWhatsapp(`*Brain*\n\n⚠️ Não consegui abrir o que você mandou: ${e.message}`);
+  }
+
+  const pedido = {
+    id: idPedido,
+    texto: texto.trim() || 'Veja o anexo.',
+    textoOriginal,
+    origem: 'whatsapp',
+    motor: null,
+    projeto: null,
+    para: null,
+    anexos,
+    arquivos,
+    status: 'recebido',
+    criadoEm: new Date().toISOString(),
+  };
+  salvar(pedido);
+  processar(pedido);
+}
 
 async function webhookWhatsapp(req, res, caminho) {
   const fim = (status) => {
@@ -886,15 +1051,41 @@ async function webhookWhatsapp(req, res, caminho) {
     if (!token || !grupo) return fim(503);
     if (req.method !== 'POST' || caminho !== `/wa/${token}`) return fim(404);
     const corpo = await lerCorpo(req);
+    fim(200); // responde logo; o trabalho segue em seguida
     // Tudo que não for do grupo de comandos é descartado sem guardar nada.
-    if (corpo.includes(grupo)) {
-      fs.mkdirSync(CAPTURAS, { recursive: true });
-      fs.writeFileSync(path.join(CAPTURAS, `${novoId()}.json`), corpo);
-    }
-    fim(200);
+    if (!corpo.includes(grupo.split('@')[0])) return;
+    estadoWhatsapp.ultimoEvento = new Date().toISOString();
+    // Guarda as 20 últimas mensagens do grupo, para conferir o formato quando algo não funcionar.
+    fs.mkdirSync(CAPTURAS, { recursive: true });
+    fs.writeFileSync(path.join(CAPTURAS, `${novoId()}.json`), corpo);
+    for (const velho of fs.readdirSync(CAPTURAS).sort().slice(0, -20)) fs.rmSync(path.join(CAPTURAS, velho), { force: true });
+    receberDoWhatsapp(JSON.parse(corpo)).catch((e) => (estadoWhatsapp.ultimoErro = `leitura: ${e.message}`));
   } catch {
-    fim(400);
+    if (!res.headersSent) fim(400);
   }
+}
+
+// O que a tela de configurações mostra. Textos longos (arquivos em base64) são encurtados.
+function resumoWhatsapp(req) {
+  const encurtar = (v) => (typeof v === 'string' && v.length > 160 ? `${v.slice(0, 160)}… (${v.length} caracteres)` : v);
+  const capturas = fs.existsSync(CAPTURAS)
+    ? fs.readdirSync(CAPTURAS).sort().slice(-4).map((nome) => {
+        try {
+          return JSON.stringify(JSON.parse(fs.readFileSync(path.join(CAPTURAS, nome), 'utf8')), (_, v) => encurtar(v), 1);
+        } catch {
+          return '(captura ilegível)';
+        }
+      })
+    : [];
+  const host = (req.headers.host || '').split(':')[0];
+  return {
+    configurado: whatsappConfigurado(),
+    faltando: ['STEVO_API_URL', 'STEVO_API_KEY', 'BRAIN_WHATSAPP_GRUPO', 'BRAIN_WEBHOOK_TOKEN'].filter((v) => !cfg(v)),
+    transcricao: !!cfg('OPENAI_API_KEY'),
+    webhook: cfg('BRAIN_WEBHOOK_TOKEN') ? `https://${host}/wa/${cfg('BRAIN_WEBHOOK_TOKEN')}` : null,
+    ...estadoWhatsapp,
+    capturas,
+  };
 }
 
 // ---------- perfil e fotos ----------
@@ -938,6 +1129,7 @@ function verPedido(p, projetos) {
     agente: p.agente,
     motor: p.motor,
     para: p.para,
+    origem: p.origem,
     projeto: p.projeto,
     projetoNome: projetos.find((x) => x.id === p.projeto)?.nome ?? null,
     resultado: p.resultado,
@@ -1033,6 +1225,14 @@ const servidor = http.createServer(async (req, res) => {
       return responder(res, 200, { foto: fotoDe(quem)?.versao ?? null });
     }
 
+    if (rota === 'GET /api/whatsapp') return responder(res, 200, resumoWhatsapp(req));
+    if (rota === 'POST /api/whatsapp/teste') {
+      await lerCorpo(req);
+      if (!whatsappConfigurado()) return responder(res, 400, { erro: 'faltam variáveis do WhatsApp' });
+      estadoWhatsapp.ultimoErro = null;
+      await enviarWhatsapp('*Brain*\n\nTeste de envio: se você está lendo isto no grupo, a saída funciona.');
+      return estadoWhatsapp.ultimoErro ? responder(res, 502, { erro: estadoWhatsapp.ultimoErro }) : responder(res, 200, { ok: true });
+    }
     if (rota === 'POST /api/perfil') {
       const nome = String(JSON.parse(await lerCorpo(req)).nome || '').trim().slice(0, 40);
       if (!nome) return responder(res, 400, { erro: 'escreva o nome' });
