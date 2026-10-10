@@ -583,6 +583,48 @@ async function trabalhar(pedido, agente) {
   }
 }
 
+// ---------- HTTP ----------
+
+function responder(res, status, corpo) {
+  const json = JSON.stringify(corpo);
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+  res.end(json);
+}
+
+function lerCorpo(req) {
+  return new Promise((resolve, reject) => {
+    let tamanho = 0;
+    const partes = [];
+    req.on('data', (d) => {
+      tamanho += d.length;
+      if (tamanho > LIMITE_CORPO) {
+        reject(new Error('pedido grande demais (limite de 60 MB)'));
+        req.destroy();
+      } else partes.push(d);
+    });
+    req.on('end', () => resolve(Buffer.concat(partes).toString('utf8')));
+    req.on('error', reject);
+  });
+}
+
+// Um site qualquer aberto no navegador não pode disparar agentes: só aceita
+// pedidos vindos da própria página (mesma origem, JSON e cabeçalho próprio).
+function origemConfiavel(req) {
+  const host = (req.headers.host || '').split(':')[0];
+  if (!HOSTS.has(host)) return false;
+  if (req.method === 'GET') return true;
+  const origem = req.headers.origin;
+  if (origem && !HOSTS.has(new URL(origem).hostname)) return false;
+  return req.headers['x-brain'] === '1' && (req.headers['content-type'] || '').startsWith('application/json');
+}
+
+function novoId() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  const data = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  return `${data}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
 // ---------- transcrição de áudio ----------
 // Única parte paga por uso (API da OpenAI). A lista de nomes vai junto para o
 // modelo acertar "Vizantu", "Lourival" etc.; o roteador ainda corrige o que sobrar.
