@@ -298,8 +298,13 @@ function montarPrompt(pedido, agente, projeto, continuando) {
     `Se produzir arquivos para entregar (documentos, imagens, planilhas), salve-os em "${path.join(dir, 'entrega')}": ` +
     `eles aparecem na conversa como anexos.`;
   const tom =
-    `Responda em português, em tom de conversa de WhatsApp: direto, sem cabeçalhos nem introdução, com listas curtas ` +
-    `quando ajudar. Dados em linhas e colunas vão em tabela markdown. Quando um gráfico ajudar de verdade a ver ` +
+    `Responda em português, curto e direto, como numa conversa de WhatsApp. Quem lê é rápido e quer só o resultado: ` +
+    `diga o que foi feito em uma ou duas frases (ex.: "Atualizei X no sistema. Commit e push feitos, pode fazer o ` +
+    `deploy."). Não repita o que foi pedido, não narre o passo a passo, não liste arquivos nem justifique escolhas, ` +
+    `a menos que ele peça os detalhes. Diga também, em uma linha, só o que ele precisa fazer ou saber (algo que ` +
+    `falhou, ficou pendente ou depende dele). Pergunta factual: responda o que foi perguntado, sem introdução. ` +
+    `Se o pedido não estiver claro, ou puder ser entendido de mais de um jeito que mude o resultado, NÃO execute ` +
+    `nem chute: faça uma pergunta curta e objetiva (com opções, se ajudar) e pare. Dados em linhas e colunas vão em tabela markdown. Quando um gráfico ajudar de verdade a ver ` +
     `números (comparação, evolução, proporção) ou ele pedir, inclua um bloco de código com a linguagem "grafico" ` +
     `contendo só um JSON neste formato: {"tipo":"barras|linhas|pizza","titulo":"…","rotulos":["jan","fev"],` +
     `"series":[{"nome":"Receita","valores":[10,20]}],"prefixo":"R$ ","sufixo":""}. A conversa desenha o gráfico.`;
@@ -328,9 +333,9 @@ function montarPrompt(pedido, agente, projeto, continuando) {
     `1. Antes de mexer, entenda o projeto: leia CLAUDE.md/AGENTS.md/README e os commits recentes (git log).\n` +
     `2. ${regraDePublicacao(pedido, projeto)}\n` +
     `3. Use as skills e ferramentas do projeto quando existirem para o tipo de entrega pedido.\n` +
-    `4. Se faltar informação essencial, não invente: pare e diga o que falta.\n` +
+    `4. Se faltar informação essencial, não invente: pergunte antes de mexer.\n` +
     `5. ${entrega}\n` +
-    `6. ${tom} Termine dizendo o que fez, o que ficou pendente e como conferir.`
+    `6. ${tom}`
   );
 }
 
