@@ -997,13 +997,17 @@ function avisarWhatsapp(pedido) {
 }
 
 async function baixarMidia(mensagem) {
+  // A Stevo já manda o arquivo dentro da própria mensagem, no campo "base64".
+  const embutido = Object.entries(mensagem).find(([chave, valor]) => chave.toLowerCase() === 'base64' && typeof valor === 'string' && valor.length > 0)?.[1];
+  if (embutido) return Buffer.from(embutido.replace(/^data:[^,]+,/, ''), 'base64');
+  // Sem o campo, pede o arquivo pela API (o conteúdo vai sem campos extras).
   const r = await stevo('/message/downloadimage', { message: mensagem });
   const base64 = buscar(r, (chave, valor) => typeof valor === 'string' && valor.length > 200 && /^(data:[^,]+,)?[A-Za-z0-9+/=\s]+$/.test(valor.slice(0, 400)));
   if (!base64) throw new Error('a Stevo não devolveu o arquivo');
   return Buffer.from(base64.replace(/^data:[^,]+,/, ''), 'base64');
 }
 
-const EXTENSOES = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a' };
+const EXTENSOES = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'video/mp4': 'mp4' };
 
 // Transforma uma mensagem do grupo em pedido.
 async function receberDoWhatsapp(payload) {
@@ -1024,7 +1028,7 @@ async function receberDoWhatsapp(payload) {
   const audio = campo(mensagem, 'audiomessage');
   const documento = campo(mensagem, 'documentmessage');
   const imagem = campo(mensagem, 'imagemessage');
-  const midia = documento || imagem;
+  const midia = documento || imagem || campo(mensagem, 'videomessage');
   if (!texto && midia) texto = String(campo(midia, 'caption') ?? '');
   if (texto.startsWith(MARCA)) return;
   if (!texto && !audio && !midia) return;
