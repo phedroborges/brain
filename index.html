@@ -2,191 +2,302 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#202c33">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#202c33" id="corDoTema">
 <title>Brain</title>
 <style>
   :root {
     --fundo:#0b141a; --barra:#202c33; --painel:#111b21; --entrada:#2a3942; --borda:#2f3b43;
-    --txt:#e9edef; --sub:#8696a0; --verde:#00a884; --meu:#005c4b; --dele:#202c33;
-    --azul:#53bdeb; --erro:#f15c6d;
+    --txt:#e9edef; --sub:#8696a0; --verde:#00a884; --sobreVerde:#04221b; --meu:#005c4b; --dele:#202c33;
+    --azul:#53bdeb; --erro:#f15c6d; --sobre:#0000002e; --realce:#ffffff14; --rodapeMeu:#ffffff99;
+    --tagProjeto:#7fe0c9; --tagProjetoFundo:#00a88426; --dia:#182229; --sombra:#0b141a66;
+    --c-junior:#53bdeb; --c-trixie:#ff8fb1; --c-flocos:#c9a6ff; --c-agato:#ffb74d;
+    --c-guara:#ff7a59; --c-marsha:#7fe0c9; --c-dino:#9ccc65; --c-pacoca:#e6c07b; --c-brain:#00a884;
   }
-  * { box-sizing:border-box; }
+  :root[data-tema="claro"] {
+    --fundo:#efeae2; --barra:#f0f2f5; --painel:#ffffff; --entrada:#ffffff; --borda:#d1d7db;
+    --txt:#111b21; --sub:#667781; --verde:#00a884; --sobreVerde:#ffffff; --meu:#d9fdd3; --dele:#ffffff;
+    --azul:#027eb5; --erro:#d93025; --sobre:#0000000f; --realce:#0000000d; --rodapeMeu:#667781;
+    --tagProjeto:#008069; --tagProjetoFundo:#00a8841f; --dia:#ffffff; --sombra:#0b141a21;
+    --c-junior:#0277bd; --c-trixie:#c2185b; --c-flocos:#6a3fb5; --c-agato:#b26a00;
+    --c-guara:#c8401a; --c-marsha:#00796b; --c-dino:#558b2f; --c-pacoca:#8d6e2f; --c-brain:#008069;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body { height:100%; }
-  body { margin:0; background:var(--painel); color:var(--txt); font:15px/1.42 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+  body { margin:0; background:var(--painel); color:var(--txt); font:15px/1.42 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; overflow:hidden; }
   [hidden] { display:none !important; }
   button { font:inherit; color:inherit; cursor:pointer; }
   a { color:var(--azul); }
+  svg { width:22px; height:22px; flex:none; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; display:block; }
 
-  .app { height:100dvh; max-width:980px; margin:0 auto; display:flex; flex-direction:column; background:var(--fundo); }
+  /* estrutura: no computador, equipe à esquerda e conversa à direita; no celular, só a conversa */
+  .app { height:100dvh; display:grid; grid-template-columns:320px minmax(0, 1fr); max-width:1500px; margin:0 auto; }
+  .lateral { display:flex; flex-direction:column; background:var(--painel); border-right:1px solid var(--borda); min-height:0; }
+  .principal { display:flex; flex-direction:column; background:var(--fundo); min-width:0; min-height:0; position:relative; }
+  @media (max-width:860px) { .app { grid-template-columns:minmax(0, 1fr); } .lateral { display:none; } }
 
-  /* topo */
-  .topo { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--barra); flex:none; }
+  .topo { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--barra); flex:none; min-height:60px; }
   .topo .titulo { font-weight:600; font-size:16px; }
   .topo .sub { color:var(--sub); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .topo .meio { flex:1; min-width:0; }
-  .icone { background:none; border:0; width:40px; height:40px; border-radius:50%; font-size:19px; color:var(--sub); flex:none; }
-  .icone:hover { background:#ffffff14; }
+  .icone { background:none; border:0; width:42px; height:42px; border-radius:50%; color:var(--sub); flex:none; display:grid; place-items:center; padding:0; }
+  .icone:hover { background:var(--realce); }
+  .soCelular { display:none; }
+  @media (max-width:860px) { .soCelular { display:grid; } }
 
-  .avatar { width:40px; height:40px; border-radius:50%; flex:none; display:grid; place-items:center; font-weight:700; color:#fff; position:relative; overflow:hidden; }
-  .avatar img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .avatar { width:40px; height:40px; border-radius:50%; flex:none; display:grid; place-items:center; font-weight:700; color:#fff; overflow:hidden; background:#667781; }
+  .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
   .avatar.p { width:28px; height:28px; font-size:12px; }
+  .avatar.g { width:72px; height:72px; font-size:28px; }
+
+  /* equipe (lateral) */
+  .equipe { flex:1; overflow-y:auto; }
+  .membro { display:flex; gap:12px; align-items:center; padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--borda); }
+  .membro:hover { background:var(--realce); }
+  .membro .info { min-width:0; flex:1; }
+  .membro .estado { font-size:13px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .membro .estado.ativo { color:var(--verde); }
+  .eu { display:flex; gap:12px; align-items:center; padding:10px 14px; background:var(--barra); cursor:pointer; flex:none; }
 
   /* conversa */
-  .conversa { flex:1; overflow-y:auto; padding:12px 5% 8px; display:flex; flex-direction:column; gap:3px; }
-  .dia { align-self:center; background:#182229; color:var(--sub); font-size:12.5px; padding:5px 12px; border-radius:8px; margin:10px 0 6px; }
+  .conversa { flex:1; overflow-y:auto; padding:12px clamp(10px, 6%, 70px) 8px; display:flex; flex-direction:column; gap:3px; overscroll-behavior:contain; }
+  .dia { align-self:center; background:var(--dia); color:var(--sub); font-size:12.5px; padding:5px 12px; border-radius:8px; margin:10px 0 6px; box-shadow:0 1px .5px var(--sombra); }
   .vazio { margin:auto; text-align:center; color:var(--sub); max-width:340px; }
-  .linha { display:flex; gap:8px; align-items:flex-end; margin-top:5px; }
+  .linha { display:flex; gap:8px; align-items:flex-start; margin-top:5px; }
   .linha.minha { justify-content:flex-end; }
-  .balao { max-width:min(78%, 620px); padding:6px 9px 7px; border-radius:8px; position:relative; box-shadow:0 1px .5px #0b141a66; overflow-wrap:anywhere; }
+  .balao { max-width:min(80%, 680px); padding:6px 9px 7px; border-radius:8px; box-shadow:0 1px .5px var(--sombra); overflow-wrap:anywhere; min-width:0; }
   .minha .balao { background:var(--meu); border-top-right-radius:0; }
   .dele .balao { background:var(--dele); border-top-left-radius:0; }
   .cabeca { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:2px; font-size:13px; }
   .nome { font-weight:600; cursor:pointer; }
-  .tag { font-size:11.5px; padding:1px 8px; border-radius:99px; background:#ffffff14; color:var(--sub); white-space:nowrap; }
-  .tag.projeto { background:#00a88426; color:#7fe0c9; }
-  .citacao { border-left:3px solid var(--verde); background:#0000002e; border-radius:5px; padding:4px 8px; margin-bottom:4px; font-size:13px; color:var(--sub); }
+  .tag { font-size:11.5px; padding:1px 8px; border-radius:99px; background:var(--realce); color:var(--sub); white-space:nowrap; }
+  .tag.projeto { background:var(--tagProjetoFundo); color:var(--tagProjeto); }
+  .citacao { border-left:3px solid var(--verde); background:var(--sobre); border-radius:5px; padding:4px 8px; margin-bottom:4px; font-size:13px; color:var(--sub); }
   .texto p { margin:0 0 6px; } .texto p:last-child { margin-bottom:0; }
   .texto ul, .texto ol { margin:2px 0 6px; padding-left:20px; }
-  .texto code { background:#0000004d; padding:1px 5px; border-radius:4px; font:13px ui-monospace, Consolas, monospace; }
-  .texto pre { background:#0000004d; padding:8px 10px; border-radius:6px; overflow-x:auto; margin:4px 0 6px; }
+  .texto code { background:var(--sobre); padding:1px 5px; border-radius:4px; font:13px ui-monospace, Consolas, monospace; }
+  .texto pre { background:var(--sobre); padding:8px 10px; border-radius:6px; overflow-x:auto; margin:4px 0 6px; }
   .texto pre code { background:none; padding:0; }
   .texto h4 { margin:6px 0 3px; font-size:15px; }
-  .rodape { float:right; margin:4px 0 -3px 12px; font-size:11px; color:#ffffff99; display:flex; gap:4px; align-items:center; white-space:nowrap; }
+  .rodape { float:right; margin:4px 0 -3px 12px; font-size:11px; color:var(--rodapeMeu); display:flex; gap:4px; align-items:center; white-space:nowrap; }
   .dele .rodape { color:var(--sub); }
   .tique { font-size:13px; letter-spacing:-3px; padding-right:3px; }
   .tique.lido { color:var(--azul); }
-  .ditado { font-size:12px; color:#ffffff8c; margin-top:3px; font-style:italic; clear:both; }
+  .ditado { font-size:12px; color:var(--rodapeMeu); margin-top:3px; font-style:italic; clear:both; }
 
-  /* anexos */
   .fotos { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px; }
-  .fotos img { max-width:260px; max-height:260px; width:100%; border-radius:6px; display:block; cursor:zoom-in; object-fit:cover; }
-  .doc { display:flex; gap:10px; align-items:center; background:#0000002e; border-radius:6px; padding:8px 10px; margin-bottom:4px; text-decoration:none; color:var(--txt); }
+  .fotos img { max-width:min(260px, 100%); max-height:260px; border-radius:6px; display:block; cursor:zoom-in; object-fit:cover; }
+  .doc { display:flex; gap:10px; align-items:center; background:var(--sobre); border-radius:6px; padding:8px 10px; margin-bottom:4px; text-decoration:none; color:var(--txt); }
   .doc .tipo { width:34px; height:40px; border-radius:4px; background:#e2574c; color:#fff; font-size:10px; font-weight:700; display:grid; place-items:center; flex:none; }
   .doc .nomeArq { font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .doc .tam { font-size:12px; color:var(--sub); }
 
-  /* andamento dentro do balão */
   .passos { margin:4px 0 2px; font-size:13.5px; display:grid; gap:2px; }
   .passo { display:flex; gap:7px; align-items:baseline; color:var(--sub); }
   .passo.atual { color:var(--txt); }
   .passo .marca { width:14px; flex:none; text-align:center; color:var(--verde); }
-  .girando { display:inline-block; width:11px; height:11px; border:2px solid #ffffff33; border-top-color:var(--verde); border-radius:50%; animation:gira .8s linear infinite; }
+  .girando { display:inline-block; width:11px; height:11px; border:2px solid var(--realce); border-top-color:var(--verde); border-radius:50%; animation:gira .8s linear infinite; }
   @keyframes gira { to { transform:rotate(360deg); } }
   .digitando { color:var(--verde); font-size:13.5px; }
   .aviso { color:var(--erro); font-size:13.5px; margin-top:3px; clear:both; }
-  .acoes { display:flex; gap:12px; margin-top:5px; font-size:12.5px; clear:both; }
-  .acoes button { background:none; border:0; padding:0; color:var(--azul); }
-  .log { background:#0000004d; border-radius:6px; padding:8px 10px; max-height:300px; overflow:auto; white-space:pre-wrap; font:12px/1.45 ui-monospace, Consolas, monospace; margin-top:6px; }
+  .acoes { display:flex; gap:14px; margin-top:6px; font-size:12.5px; clear:both; flex-wrap:wrap; }
+  .acoes button { background:none; border:0; padding:2px 0; color:var(--azul); display:flex; gap:4px; align-items:center; }
+  .acoes svg { width:14px; height:14px; }
+  .log { background:var(--sobre); border-radius:6px; padding:8px 10px; max-height:300px; overflow:auto; white-space:pre-wrap; font:12px/1.45 ui-monospace, Consolas, monospace; margin-top:6px; }
 
-  /* quem está trabalhando: o espaço se divide entre os agentes ativos */
+  /* a mesa: um cartão por agente trabalhando; o espaço se divide entre eles */
   .mesa { flex:none; display:grid; gap:6px; padding:8px 10px; background:var(--painel); border-top:1px solid var(--borda); }
   .cartao { background:var(--barra); border-radius:10px; padding:8px 10px; min-width:0; cursor:pointer; display:grid; gap:3px; }
   .cartao .cabeca { margin:0; flex-wrap:nowrap; min-width:0; }
   .cartao .fazendo { font-size:12.5px; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cartao .tempo { margin-left:auto; font-size:12px; color:var(--sub); flex:none; }
   .cartao .x { background:none; border:0; color:var(--sub); padding:0 2px; flex:none; }
+  .cartao .x svg { width:16px; height:16px; }
+  @media (max-width:860px) {
+    .mesa { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; }
+    .mesa .cartao { flex:0 0 78%; scroll-snap-align:start; }
+    .mesa .cartao:only-child { flex-basis:100%; }
+  }
 
   /* composição */
   .respondendo { flex:none; display:flex; align-items:center; gap:10px; padding:8px 14px; background:var(--barra); border-left:4px solid var(--verde); font-size:13.5px; }
-  .respondendo .x { margin-left:auto; background:none; border:0; color:var(--sub); font-size:18px; }
+  .respondendo .x { margin-left:auto; background:none; border:0; color:var(--sub); padding:0; }
   .previa { flex:none; display:flex; gap:8px; flex-wrap:wrap; padding:8px 14px 0; background:var(--barra); }
-  .previa .item { position:relative; background:var(--entrada); border-radius:8px; padding:6px 26px 6px 8px; font-size:13px; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .previa .item img { height:48px; border-radius:5px; display:block; }
-  .previa .item button { position:absolute; top:2px; right:4px; background:none; border:0; color:var(--sub); }
-  .opcoes { flex:none; display:flex; gap:8px; padding:8px 14px 0; background:var(--barra); }
-  select { background:var(--entrada); color:var(--txt); border:0; border-radius:8px; padding:7px 10px; font:inherit; font-size:13.5px; min-width:0; flex:1; }
-  .compor { flex:none; display:flex; gap:8px; align-items:flex-end; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); background:var(--barra); }
-  .compor textarea { flex:1; resize:none; border:0; outline:0; background:var(--entrada); color:var(--txt); border-radius:22px; padding:10px 16px; font:inherit; max-height:140px; min-height:42px; }
-  .redondo { width:44px; height:44px; border-radius:50%; border:0; background:var(--verde); color:#04221b; font-size:19px; flex:none; display:grid; place-items:center; }
-  .redondo.gravando { background:var(--erro); color:#fff; animation:pulsa 1.2s ease-in-out infinite; }
-  @keyframes pulsa { 50% { transform:scale(1.08); } }
+  .previa .item { position:relative; background:var(--entrada); border-radius:8px; padding:6px 28px 6px 8px; font-size:13px; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .previa .item img { height:52px; border-radius:5px; display:block; }
+  .previa .item button { position:absolute; top:2px; right:2px; background:none; border:0; color:var(--sub); padding:2px; }
+  .previa .item button svg { width:16px; height:16px; }
   .erroEnvio { flex:none; background:var(--barra); color:var(--erro); font-size:13px; padding:0 16px; }
   .erroEnvio:not(:empty) { padding-top:6px; }
+  .compor { flex:none; display:flex; gap:6px; align-items:flex-end; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); background:var(--barra); }
+  .compor textarea { flex:1; min-width:0; resize:none; border:0; outline:0; background:var(--entrada); color:var(--txt); border-radius:22px; padding:10px 16px; font:inherit; font-size:16px; line-height:1.35; max-height:140px; height:42px; }
+  .redondo { width:44px; height:44px; border-radius:50%; border:0; background:var(--verde); color:var(--sobreVerde); flex:none; display:grid; place-items:center; padding:0; }
+  .redondo.gravando { background:var(--erro); color:#fff; animation:pulsa 1.2s ease-in-out infinite; }
+  @keyframes pulsa { 50% { transform:scale(1.08); } }
+  .soltar { position:absolute; inset:0; z-index:5; background:#00a884cc; color:#fff; display:grid; place-items:center; font-size:20px; font-weight:600; pointer-events:none; }
 
-  /* janelas */
-  .veu { position:fixed; inset:0; background:#000a; display:grid; place-items:center; z-index:20; padding:16px; }
-  .janela { background:var(--barra); border-radius:12px; padding:18px; width:min(460px, 100%); max-height:86dvh; overflow:auto; }
-  .janela h3 { margin:0 0 12px; font-size:17px; }
-  .janela input { width:100%; background:var(--entrada); color:var(--txt); border:0; border-radius:8px; padding:10px 12px; font:inherit; }
-  .botao { background:var(--verde); color:#04221b; border:0; border-radius:20px; padding:8px 18px; font-weight:600; }
-  .botao.leve { background:var(--entrada); color:var(--txt); }
+  /* configurações: gaveta à direita no computador, tela cheia no celular */
+  .veu { position:fixed; inset:0; background:#0009; z-index:20; display:flex; justify-content:flex-end; }
+  .veu.centro { justify-content:center; align-items:center; padding:16px; }
+  .gaveta { width:min(440px, 100%); height:100%; background:var(--painel); display:flex; flex-direction:column; animation:entra .18s ease-out; }
+  @keyframes entra { from { transform:translateX(30px); opacity:0; } }
+  .gaveta .corpo { flex:1; overflow-y:auto; padding:0 0 calc(20px + env(safe-area-inset-bottom)); }
+  .secao { padding:16px 18px; border-bottom:8px solid var(--fundo); }
+  .secao h3 { margin:0 0 12px; font-size:13px; font-weight:600; color:var(--verde); text-transform:uppercase; letter-spacing:.04em; }
+  .secao p.dica { margin:8px 0 0; color:var(--sub); font-size:13px; }
+  .campo { display:block; margin-top:10px; font-size:13px; color:var(--sub); }
+  .campo input, .campo select { display:block; width:100%; margin-top:4px; background:var(--entrada); color:var(--txt); border:1px solid var(--borda); border-radius:8px; padding:10px 12px; font:inherit; font-size:16px; }
+  .botao { background:var(--verde); color:var(--sobreVerde); border:0; border-radius:20px; padding:9px 18px; font-weight:600; }
+  .botao.leve { background:var(--entrada); color:var(--txt); border:1px solid var(--borda); }
+  .botao.texto { background:none; color:var(--sub); padding:4px 6px; font-weight:400; font-size:13px; }
+  .fila { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+  .perfilTopo { display:flex; gap:16px; align-items:center; }
+  .trocarFoto { position:relative; cursor:pointer; border-radius:50%; }
+  .trocarFoto::after { content:"trocar"; position:absolute; inset:0; border-radius:50%; background:#0008; color:#fff; font-size:11px; display:grid; place-items:center; opacity:0; transition:opacity .15s; }
+  .trocarFoto:hover::after, .trocarFoto:focus-visible::after { opacity:1; }
+  .gradeAgentes { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:14px 8px; }
+  .gradeAgentes .um { display:grid; justify-items:center; gap:4px; font-size:13px; text-align:center; min-width:0; }
+  .gradeAgentes .avatar { width:56px; height:56px; font-size:22px; }
+  .segmentos { display:flex; background:var(--entrada); border:1px solid var(--borda); border-radius:10px; padding:3px; }
+  .segmentos button { flex:1; border:0; background:none; border-radius:7px; padding:8px 4px; }
+  .segmentos button.sel { background:var(--verde); color:var(--sobreVerde); font-weight:600; }
   .conexao { padding:10px 0; border-top:1px solid var(--borda); }
-  .conexao:first-of-type { border-top:0; }
+  .conexao:first-child { border-top:0; padding-top:0; }
   .conexao .topoC { display:flex; align-items:center; gap:10px; }
   .conexao .passoC { margin-top:8px; font-size:14px; display:grid; gap:6px; }
   .ok { color:var(--verde); } .nao { color:var(--erro); }
+  .janela { background:var(--painel); border-radius:14px; padding:22px; width:min(380px, 100%); }
   .foto { position:fixed; inset:0; background:#000d; display:grid; place-items:center; z-index:30; cursor:zoom-out; }
   .foto img { max-width:94vw; max-height:94dvh; }
 
-  @media (max-width:640px) { .conversa { padding:10px 10px 6px; } .balao { max-width:88%; } .dele > .avatar { display:none; } }
+  @media (max-width:860px) {
+    .balao { max-width:90%; }
+    .dele > .avatar { display:none; }
+    .gaveta { width:100%; }
+  }
 </style>
 </head>
 <body>
 
-<div class="app">
-  <header class="topo">
-    <div class="avatar" style="background:#00a884">B</div>
-    <div class="meio">
-      <div class="titulo">Brain</div>
-      <div class="sub" id="subtitulo">Junior, Trixie, Flocos, Ágato, Guará, Marsha, Dino, Paçoca</div>
+<div class="app" id="app">
+  <aside class="lateral">
+    <div class="topo"><div class="avatar" style="background:var(--c-brain)">B</div><div class="meio"><div class="titulo">Brain</div><div class="sub">sua equipe</div></div></div>
+    <div class="equipe" id="equipe"></div>
+    <div class="eu" id="abrirConfigLateral" title="Configurações"><span id="meuAvatarLateral"></span><div class="meio" style="flex:1; min-width:0"><div class="titulo" id="meuNomeLateral">Você</div><div class="sub" style="color:var(--sub); font-size:13px">Configurações</div></div><span style="color:var(--sub)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span></div>
+  </aside>
+
+  <section class="principal" id="principal">
+    <header class="topo">
+      <div class="avatar soCelular" style="background:var(--c-brain)">B</div>
+      <div class="meio">
+        <div class="titulo">Brain</div>
+        <div class="sub" id="subtitulo">Junior, Trixie, Flocos, Ágato, Guará, Marsha, Dino, Paçoca</div>
+      </div>
+      <button class="icone soCelular" id="abrirConfig" title="Configurações"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg></button>
+    </header>
+
+    <main class="conversa" id="conversa"><div class="vazio">Mande uma mensagem. Pode ser uma pergunta qualquer ou um pedido para um dos seus projetos.</div></main>
+
+    <section class="mesa" id="mesa" hidden></section>
+
+    <div class="respondendo" id="respondendo" hidden><span>Falando com <b id="respondendoNome"></b></span><button class="x" id="cancelarResposta" title="Cancelar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="previa" id="previa" hidden></div>
+    <div class="erroEnvio" id="aviso"></div>
+    <footer class="compor">
+      <button class="icone" id="anexar" title="Anexar arquivo"><svg viewBox="0 0 24 24"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3"/></svg></button>
+      <input type="file" id="arquivo" multiple hidden>
+      <textarea id="texto" rows="1" placeholder="Mensagem" enterkeyhint="enter"></textarea>
+      <button class="redondo" id="acao" title="Gravar ou enviar"></button>
+    </footer>
+    <div class="soltar" id="soltar" hidden>Solte para anexar</div>
+  </section>
+</div>
+
+<div class="veu" id="config" hidden>
+  <div class="gaveta">
+    <div class="topo"><button class="icone" id="fecharConfig" title="Voltar"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button><div class="titulo">Configurações</div></div>
+    <div class="corpo">
+      <div class="secao">
+        <h3>Meu perfil</h3>
+        <div class="perfilTopo">
+          <div class="trocarFoto" data-foto-de="eu" tabindex="0" id="meuAvatarConfig"></div>
+          <label class="campo" style="flex:1; margin:0">Como os agentes me chamam<input id="meuNome" maxlength="40"></label>
+        </div>
+        <div class="fila"><button class="botao" id="salvarPerfil">Salvar nome</button><button class="botao texto" data-remover-foto="eu">remover foto</button><span id="avisoPerfil" class="ok"></span></div>
+      </div>
+
+      <div class="secao">
+        <h3>Aparência</h3>
+        <div class="segmentos" id="temas"><button data-tema="auto">Automático</button><button data-tema="claro">Claro</button><button data-tema="escuro">Escuro</button></div>
+      </div>
+
+      <div class="secao">
+        <h3>Agentes</h3>
+        <div class="gradeAgentes" id="gradeAgentes"></div>
+        <p class="dica">Toque na foto para trocar. A imagem é recortada em quadrado.</p>
+      </div>
+
+      <div class="secao">
+        <h3>Próxima mensagem</h3>
+        <label class="campo" style="margin-top:0">Projeto<select id="projeto"></select></label>
+        <label class="campo">Motor<select id="motor"><option value="">Padrão do projeto</option><option value="claude">Claude</option><option value="codex">Codex</option></select></label>
+        <p class="dica">Em automático, o Brain descobre o projeto pela mensagem. O projeto volta para automático depois de cada envio.</p>
+      </div>
+
+      <div class="secao">
+        <h3>Conexões</h3>
+        <div id="conexoes">Verificando…</div>
+        <p class="dica">Contas usadas pelos agentes nesta máquina. Ficam gravadas no servidor e valem para todos os seus aparelhos.</p>
+      </div>
+
+      <div class="secao" id="secaoSenha">
+        <h3>Senha</h3>
+        <label class="campo" style="margin-top:0">Senha atual<input id="senhaAtual" type="password" autocomplete="current-password"></label>
+        <label class="campo">Senha nova (mínimo de 8 caracteres)<input id="senhaNova" type="password" autocomplete="new-password"></label>
+        <div class="fila"><button class="botao" id="trocarSenha">Trocar senha</button><span id="avisoSenha"></span></div>
+        <p class="dica">Ao trocar, os outros aparelhos são desconectados.</p>
+      </div>
     </div>
-    <button class="icone" id="abrirOpcoes" title="Escolher projeto e motor">⚙</button>
-    <button class="icone" id="abrirConexoes" title="Conexões">🔗</button>
-  </header>
-
-  <main class="conversa" id="conversa"><div class="vazio">Mande uma mensagem. Pode ser uma pergunta qualquer ou um pedido para um dos seus projetos.</div></main>
-
-  <section class="mesa" id="mesa" hidden></section>
-
-  <div class="respondendo" id="respondendo" hidden><span>Falando com <b id="respondendoNome"></b></span><button class="x" id="cancelarResposta" title="Cancelar">×</button></div>
-  <div class="previa" id="previa" hidden></div>
-  <div class="opcoes" id="opcoes" hidden>
-    <select id="projeto" title="Projeto"></select>
-    <select id="motor" title="Motor">
-      <option value="">Motor padrão</option>
-      <option value="claude">Claude</option>
-      <option value="codex">Codex</option>
-    </select>
   </div>
-  <div class="erroEnvio" id="aviso"></div>
-  <footer class="compor">
-    <label class="icone" title="Anexar" style="display:grid; place-items:center; cursor:pointer">📎<input type="file" id="arquivo" multiple hidden></label>
-    <textarea id="texto" rows="1" placeholder="Mensagem"></textarea>
-    <button class="redondo" id="acao" title="Gravar ou enviar">🎤</button>
-  </footer>
 </div>
+<input type="file" id="arquivoFoto" accept="image/*" hidden>
 
-<div class="veu" id="login" hidden>
+<div class="veu centro" id="login" hidden>
   <form class="janela" onsubmit="entrar(event)">
-    <h3>Brain</h3>
-    <input id="senha" type="password" placeholder="Senha" autocomplete="current-password">
-    <div style="margin-top:12px; display:flex; gap:10px; align-items:center"><button class="botao" type="submit">Entrar</button><span class="nao" id="avisoLogin"></span></div>
+    <div class="perfilTopo" style="margin-bottom:14px"><div class="avatar" style="background:var(--c-brain)">B</div><div class="titulo" style="font-weight:600; font-size:18px">Brain</div></div>
+    <label class="campo" style="margin:0">Senha<input id="senha" type="password" autocomplete="current-password"></label>
+    <div class="fila"><button class="botao" type="submit">Entrar</button><span class="nao" id="avisoLogin"></span></div>
   </form>
-</div>
-
-<div class="veu" id="janelaConexoes" hidden>
-  <div class="janela">
-    <h3>Conexões</h3>
-    <div id="conexoes">Verificando…</div>
-    <div style="margin-top:14px; text-align:right"><button class="botao leve" id="fecharConexoes">Fechar</button></div>
-  </div>
 </div>
 
 <div class="foto" id="foto" hidden><img alt=""></div>
 
 <script>
 const $ = (id) => document.getElementById(id);
-const CORES = { Junior:'#53bdeb', Trixie:'#ff8fb1', Flocos:'#c9a6ff', 'Ágato':'#ffb74d', 'Guará':'#ff7a59', Marsha:'#7fe0c9', Dino:'#9ccc65', 'Paçoca':'#e6c07b', Brain:'#00a884' };
+const NOMES = ['Junior', 'Trixie', 'Flocos', 'Ágato', 'Guará', 'Marsha', 'Dino', 'Paçoca'];
 const EM_ANDAMENTO = ['recebido', 'roteando', 'na_fila', 'executando'];
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const escapar = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const cor = (nome) => `var(--c-${slug(nome)}, var(--sub))`;
+
+const ICONES = {
+  mic: '<path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  enviar: '<path d="M4 12l16-8-6 16-3-6-7-2z"/>',
+  parar: '<rect x="7" y="7" width="10" height="10" rx="1.5"/>',
+  copiar: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  feito: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+};
+const icone = (nome) => `<svg viewBox="0 0 24 24">${ICONES[nome]}</svg>`;
 
 let projetos = [];
 let arquivos = [];
-let para = null;              // agente com quem estou falando (resposta direcionada)
-const logsAbertos = new Map(); // id do pedido -> texto do log
-const desenhados = new Map();  // id do pedido -> assinatura do que está na tela
+let para = null;                 // agente com quem estou falando
+let perfil = { nome: 'Você', foto: null };
+let fotos = {};                  // quem -> versão da foto (para o navegador não usar a antiga)
+let pedidosPorId = new Map();
+const logsAbertos = new Map();
+const desenhados = new Map();
 
 const api = (caminho, corpo) =>
   fetch(caminho, corpo === undefined ? {} : { method:'POST', headers:{ 'content-type':'application/json', 'x-brain':'1' }, body: JSON.stringify(corpo) })
@@ -206,6 +317,19 @@ async function entrar(e) {
     iniciar();
   } catch (x) { $('avisoLogin').textContent = x.message; }
 }
+
+// ----- tema: automático segue o aparelho -----
+const escuroNoAparelho = matchMedia('(prefers-color-scheme: dark)');
+function aplicarTema() {
+  const escolha = localStorage.getItem('tema') || 'auto';
+  const tema = escolha === 'auto' ? (escuroNoAparelho.matches ? 'escuro' : 'claro') : escolha;
+  document.documentElement.dataset.tema = tema;
+  $('corDoTema').content = tema === 'claro' ? '#f0f2f5' : '#202c33';
+  for (const b of $('temas').children) b.classList.toggle('sel', b.dataset.tema === escolha);
+}
+escuroNoAparelho.addEventListener('change', aplicarTema);
+$('temas').onclick = (e) => { if (e.target.dataset.tema) { localStorage.setItem('tema', e.target.dataset.tema); aplicarTema(); } };
+aplicarTema();
 
 // ----- texto das mensagens (markdown enxuto, sempre escapado antes) -----
 function formatar(bruto) {
@@ -239,8 +363,12 @@ function formatar(bruto) {
 }
 
 // ----- peças -----
-const avatar = (nome, pequeno) =>
-  `<div class="avatar ${pequeno ? 'p' : ''}" style="background:${CORES[nome] || '#667781'}">${escapar(nome[0])}<img src="/avatares/${slug(nome)}" alt="" onerror="this.remove()"></div>`;
+function avatar(nome, tamanho = '') {
+  const quem = nome === perfil.nome && tamanho.includes('eu') ? 'eu' : slug(nome);
+  const versao = fotos[quem];
+  const fundo = quem === 'eu' ? 'var(--sub)' : cor(nome);
+  return `<div class="avatar ${tamanho.replace('eu', '')}" style="background:${fundo}">${versao ? `<img src="/avatares/${quem}?v=${versao}" alt="">` : escapar((nome[0] || '?').toUpperCase())}</div>`;
+}
 const hora = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
 const tamanho = (b) => (b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
 const ehImagem = (nome) => /\.(png|jpe?g|gif|webp)$/i.test(nome);
@@ -249,12 +377,12 @@ const nomeDoDia = (d) => d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-
 function anexosHtml(id, pasta, lista) {
   if (!lista?.length) return '';
   const url = (a) => `/api/arquivo/${id}/${pasta}/${encodeURIComponent(a.nome)}`;
-  const fotos = lista.filter((a) => ehImagem(a.nome)).map((a) => `<img src="${url(a)}" alt="${escapar(a.nome)}" data-foto loading="lazy">`).join('');
+  const imagens = lista.filter((a) => ehImagem(a.nome)).map((a) => `<img src="${url(a)}" alt="${escapar(a.nome)}" data-foto loading="lazy">`).join('');
   const docs = lista.filter((a) => !ehImagem(a.nome)).map((a) => {
     const ext = (a.nome.includes('.') ? a.nome.split('.').pop() : 'arq').slice(0, 4).toUpperCase();
     return `<a class="doc" href="${url(a)}" target="_blank" rel="noopener"><span class="tipo">${escapar(ext)}</span><span style="min-width:0"><div class="nomeArq">${escapar(a.nome)}</div><div class="tam">${tamanho(a.tamanho)}</div></span></a>`;
   }).join('');
-  return (fotos ? `<div class="fotos">${fotos}</div>` : '') + docs;
+  return (imagens ? `<div class="fotos">${imagens}</div>` : '') + docs;
 }
 
 // ✓ recebido · ✓✓ com o agente · ✓✓ azul concluído
@@ -266,7 +394,7 @@ function tique(p) {
 
 function baloes(p) {
   const minha = `<div class="linha minha"><div class="balao">
-      ${p.para ? `<div class="citacao">para <b style="color:${CORES[p.para]}">${escapar(p.para)}</b></div>` : ''}
+      ${p.para ? `<div class="citacao">para <b style="color:${cor(p.para)}">${escapar(p.para)}</b></div>` : ''}
       ${anexosHtml(p.id, 'anexos', p.arquivos)}
       <div class="texto">${formatar(p.texto)}<span class="rodape">${hora(p.criadoEm)} ${tique(p)}</span></div>
       ${p.textoOriginal ? `<div class="ditado">ditado: ${escapar(p.textoOriginal)}</div>` : ''}
@@ -291,12 +419,13 @@ function baloes(p) {
   const nome = p.agente || (p.status === 'na_fila' && p.para) || 'Brain';
   const acoes = [];
   if (andando) acoes.push(`<button data-cancelar="${p.id}">cancelar</button>`);
+  if (!andando && p.resultado) acoes.push(`<button data-copiar="${p.id}">${icone('copiar')}copiar</button>`);
   if (p.agente && p.agente !== 'Brain') {
     if (!andando) acoes.push(`<button data-para="${escapar(p.agente)}">responder</button>`);
     acoes.push(`<button data-log="${p.id}">${logsAbertos.has(p.id) ? 'ocultar detalhes' : 'detalhes'}</button>`);
   }
-  const dele = `<div class="linha dele" id="resp-${p.id}">${avatar(nome, true)}<div class="balao">
-      <div class="cabeca"><span class="nome" style="color:${CORES[nome] || '#8696a0'}" ${nome !== 'Brain' ? `data-para="${escapar(nome)}"` : ''}>${escapar(nome)}</span>
+  const dele = `<div class="linha dele" id="resp-${p.id}">${avatar(nome, 'p')}<div class="balao">
+      <div class="cabeca"><span class="nome" style="color:${cor(nome)}" ${nome !== 'Brain' ? `data-para="${escapar(nome)}"` : ''}>${escapar(nome)}</span>
         ${p.projetoNome ? `<span class="tag projeto">${escapar(p.projetoNome)}</span>` : ''}
         ${p.motor === 'codex' ? '<span class="tag">Codex</span>' : ''}</div>
       ${corpo}
@@ -309,10 +438,17 @@ function baloes(p) {
 
 // ----- conversa: só redesenha o pedido que mudou -----
 let diaAnterior = '';
+let assinaturaFotos = '';
 function desenhar({ pedidos, agentes }) {
+  // foto nova de um agente: redesenha tudo uma vez
+  for (const a of agentes) fotos[slug(a.nome)] = a.foto;
+  const novaAssinatura = JSON.stringify(fotos);
+  if (novaAssinatura !== assinaturaFotos) { assinaturaFotos = novaAssinatura; desenhados.clear(); desenharConfig(); }
+
   const area = $('conversa');
   const noFim = area.scrollTop + area.clientHeight >= area.scrollHeight - 80;
   if (pedidos.length) area.querySelector('.vazio')?.remove();
+  pedidosPorId = new Map(pedidos.map((p) => [p.id, p]));
   for (const p of pedidos) {
     const assinatura = JSON.stringify(p) + (logsAbertos.get(p.id)?.length ?? '');
     if (desenhados.get(p.id) === assinatura) continue;
@@ -332,19 +468,30 @@ function desenhar({ pedidos, agentes }) {
   }
   if (noFim) area.scrollTop = area.scrollHeight;
 
-  // a mesa: um cartão por agente trabalhando; o espaço se divide entre eles
+  // a mesa: um cartão por agente trabalhando
   const ativos = pedidos.filter((p) => p.status === 'executando' && p.agente);
   const mesa = $('mesa');
   mesa.hidden = !ativos.length;
-  mesa.style.gridTemplateColumns = `repeat(${Math.min(ativos.length, innerWidth < 640 ? 2 : 4)}, minmax(0, 1fr))`;
+  mesa.style.gridTemplateColumns = `repeat(${Math.min(ativos.length, 4)}, minmax(0, 1fr))`;
   mesa.innerHTML = ativos.map((p) => {
     const seg = Math.max(0, Math.round((Date.now() - new Date(p.iniciadoEm || p.criadoEm)) / 1000));
     return `<div class="cartao" data-ir="${p.id}">
-      <div class="cabeca">${avatar(p.agente, true)}<span class="nome" style="color:${CORES[p.agente]}">${escapar(p.agente)}</span>
+      <div class="cabeca">${avatar(p.agente, 'p')}<span class="nome" style="color:${cor(p.agente)}">${escapar(p.agente)}</span>
         ${p.projetoNome ? `<span class="tag projeto" style="overflow:hidden; text-overflow:ellipsis">${escapar(p.projetoNome)}</span>` : ''}
         <span class="tempo">${seg >= 60 ? Math.floor(seg / 60) + ' min' : seg + ' s'}</span>
-        <button class="x" data-cancelar="${p.id}" title="Cancelar">×</button></div>
+        <button class="x" data-cancelar="${p.id}" title="Cancelar">${icone('x')}</button></div>
       <div class="fazendo">${escapar(p.passos[p.passos.length - 1] || 'começando')}</div></div>`;
+  }).join('');
+
+  // a equipe (lateral, no computador)
+  $('equipe').innerHTML = agentes.map((a) => {
+    const trabalho = a.ocupado && pedidosPorId.get(a.ocupado);
+    const estado = a.ocupado
+      ? `${a.projetoNome ? escapar(a.projetoNome) + ' · ' : ''}${escapar(trabalho?.passos.at(-1) || 'trabalhando')}`
+      : a.temSessao ? `livre · último: ${escapar(a.resumo || a.projetoNome || '')}` : 'livre';
+    return `<div class="membro" data-para="${escapar(a.nome)}">${avatar(a.nome)}<div class="info">
+      <div class="nome" style="color:${cor(a.nome)}">${escapar(a.nome)}</div>
+      <div class="estado ${a.ocupado ? 'ativo' : ''}">${estado}</div></div></div>`;
   }).join('');
 
   const ocupados = agentes.filter((a) => a.ocupado).map((a) => a.nome);
@@ -355,12 +502,27 @@ async function atualizar() {
   try { desenhar(await api('/api/conversa')); } catch {}
 }
 
-// ----- cliques na conversa e na mesa -----
+// ----- copiar uma resposta em um clique -----
+async function copiar(texto) {
+  try { await navigator.clipboard.writeText(texto); }
+  catch {
+    const t = document.createElement('textarea'); t.value = texto; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove();
+  }
+}
+
+// ----- cliques na conversa, na mesa e na equipe -----
 async function clicar(e) {
-  const d = e.target.closest('[data-cancelar],[data-para],[data-log],[data-foto],[data-ir]')?.dataset;
+  const alvo = e.target.closest('[data-cancelar],[data-copiar],[data-para],[data-log],[data-foto],[data-ir]');
+  const d = alvo?.dataset;
   if (!d) return;
   if (d.cancelar) { await api(`/api/pedidos/${d.cancelar}/cancelar`, {}).catch((x) => ($('aviso').textContent = x.message)); return atualizar(); }
-  if (d.para) { para = d.para; $('respondendoNome').textContent = para; $('respondendoNome').style.color = CORES[para]; $('respondendo').hidden = false; return $('texto').focus(); }
+  if (d.copiar) {
+    await copiar(pedidosPorId.get(d.copiar)?.resultado ?? '');
+    alvo.innerHTML = icone('feito') + 'copiado';
+    return setTimeout(() => { alvo.innerHTML = icone('copiar') + 'copiar'; }, 1600);
+  }
+  if (d.para) { para = d.para; $('respondendoNome').textContent = para; $('respondendoNome').style.color = cor(para); $('respondendo').hidden = false; return $('texto').focus(); }
   if (d.log) {
     if (logsAbertos.has(d.log)) logsAbertos.delete(d.log);
     else logsAbertos.set(d.log, (await api('/api/pedidos/' + d.log).catch(() => ({ log:'' }))).log);
@@ -371,21 +533,42 @@ async function clicar(e) {
 }
 $('conversa').onclick = clicar;
 $('mesa').onclick = clicar;
+$('equipe').onclick = clicar;
 $('foto').onclick = () => ($('foto').hidden = true);
 $('cancelarResposta').onclick = () => { para = null; $('respondendo').hidden = true; };
-$('abrirOpcoes').onclick = () => ($('opcoes').hidden = !$('opcoes').hidden);
 
-// ----- anexos -----
-$('arquivo').onchange = (e) => { arquivos = arquivos.concat([...e.target.files]); e.target.value = ''; mostrarPrevia(); };
+// ----- anexos: clipe, colar da área de transferência e arrastar -----
+$('anexar').onclick = () => $('arquivo').click();
+$('arquivo').onchange = (e) => { adicionarArquivos([...e.target.files]); e.target.value = ''; };
+function adicionarArquivos(novos) {
+  // imagem colada vem sem nome útil: ganha um nome com a hora
+  const carimbo = new Date().toTimeString().slice(0, 8).replaceAll(':', '');
+  arquivos = arquivos.concat(novos.map((f, i) => (f.name && f.name !== 'image.png' ? f : new File([f], `imagem-${carimbo}-${arquivos.length + i + 1}.${(f.type.split('/')[1] || 'png').replace('jpeg', 'jpg')}`, { type: f.type }))));
+  mostrarPrevia();
+}
 function mostrarPrevia() {
   $('previa').hidden = !arquivos.length;
-  $('previa').innerHTML = arquivos.map((f, i) => `<div class="item">${f.type.startsWith('image/') ? `<img src="${URL.createObjectURL(f)}" alt="">` : '📄 ' + escapar(f.name)}<button data-tirar="${i}">×</button></div>`).join('');
+  $('previa').innerHTML = arquivos.map((f, i) => `<div class="item">${f.type.startsWith('image/') ? `<img src="${URL.createObjectURL(f)}" alt="">` : escapar(f.name)}<button data-tirar="${i}" title="Remover">${icone('x')}</button></div>`).join('');
   botao();
 }
-$('previa').onclick = (e) => { if (e.target.dataset.tirar) { arquivos.splice(+e.target.dataset.tirar, 1); mostrarPrevia(); } };
+$('previa').onclick = (e) => { const b = e.target.closest('[data-tirar]'); if (b) { arquivos.splice(+b.dataset.tirar, 1); mostrarPrevia(); } };
 const emBase64 = (f) => new Promise((ok, falha) => { const l = new FileReader(); l.onload = () => ok(l.result.split(',')[1]); l.onerror = falha; l.readAsDataURL(f); });
-// colar imagem direto no campo, como no WhatsApp Web
-$('texto').addEventListener('paste', (e) => { const colados = [...e.clipboardData.files]; if (colados.length) { e.preventDefault(); arquivos = arquivos.concat(colados); mostrarPrevia(); } });
+
+// colar (Ctrl+V) em qualquer lugar da página, com ou sem o campo em foco
+document.addEventListener('paste', (e) => {
+  if (!$('config').hidden || !$('login').hidden) return;
+  const colados = [...(e.clipboardData?.items ?? [])].filter((i) => i.kind === 'file').map((i) => i.getAsFile()).filter(Boolean);
+  if (!colados.length) return;
+  e.preventDefault();
+  adicionarArquivos(colados);
+  $('texto').focus();
+});
+let arrastando = 0;
+const temArquivo = (e) => [...(e.dataTransfer?.types ?? [])].includes('Files');
+$('principal').addEventListener('dragenter', (e) => { if (temArquivo(e)) { arrastando++; $('soltar').hidden = false; } });
+$('principal').addEventListener('dragleave', (e) => { if (temArquivo(e) && --arrastando <= 0) { arrastando = 0; $('soltar').hidden = true; } });
+$('principal').addEventListener('dragover', (e) => { if (temArquivo(e)) e.preventDefault(); });
+$('principal').addEventListener('drop', (e) => { if (!temArquivo(e)) return; e.preventDefault(); arrastando = 0; $('soltar').hidden = true; adicionarArquivos([...e.dataTransfer.files]); });
 
 // ----- ditado -----
 // Com OPENAI_API_KEY no servidor: grava o áudio e transcreve lá, atualizando o
@@ -396,10 +579,6 @@ let transcricaoNoServidor = false;
 let rec = null;
 let gravador = null;
 let pararGravacao = null;
-
-const carregarConfig = () => api('/api/config').then((c) => {
-  transcricaoNoServidor = c.transcricao && !!navigator.mediaDevices?.getUserMedia && !!window.MediaRecorder;
-}).catch(() => {});
 
 async function gravar() {
   const fluxo = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -431,7 +610,7 @@ async function gravar() {
     clearInterval(parcial);
     gravador.onstop = async () => {
       fluxo.getTracks().forEach((t) => t.stop());
-      $('acao').textContent = '…';
+      $('acao').innerHTML = '<span class="girando"></span>';
       await transcrever(true);
       gravador = null; pararGravacao = null;
       botao();
@@ -459,16 +638,17 @@ async function encerrarDitado() {
 }
 
 // ----- campo e botão (o microfone vira enviar quando há o que mandar) -----
-function ajustarAltura() { const t = $('texto'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; botao(); }
+function ajustarAltura() { const t = $('texto'); t.style.height = '42px'; t.style.height = Math.min(Math.max(t.scrollHeight, 42), 140) + 'px'; botao(); }
 function botao() {
   const b = $('acao');
   const gravando = !!(rec || gravador);
   b.classList.toggle('gravando', gravando);
-  b.textContent = gravando ? '⏹' : ($('texto').value.trim() || arquivos.length ? '➤' : '🎤');
+  b.innerHTML = icone(gravando ? 'parar' : ($('texto').value.trim() || arquivos.length ? 'enviar' : 'mic'));
 }
 $('texto').oninput = ajustarAltura;
-// no computador, Enter envia e Shift+Enter quebra a linha; no celular, Enter quebra a linha
-$('texto').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey && innerWidth >= 640) { e.preventDefault(); enviar(); } };
+// no computador, Enter envia e Shift+Enter quebra a linha; em tela de toque, Enter quebra a linha
+const telaDeToque = matchMedia('(pointer: coarse)');
+$('texto').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !telaDeToque.matches) { e.preventDefault(); enviar(); } };
 
 $('acao').onclick = async () => {
   $('aviso').textContent = '';
@@ -486,7 +666,7 @@ async function enviar() {
   $('aviso').textContent = '';
   await encerrarDitado();
   try {
-    const anexos = await Promise.all(arquivos.map(async (f) => ({ nome: f.name || 'imagem.png', base64: await emBase64(f) })));
+    const anexos = await Promise.all(arquivos.map(async (f) => ({ nome: f.name, base64: await emBase64(f) })));
     await api('/api/pedidos', { texto: $('texto').value, motor: $('motor').value, projeto: $('projeto').value, para, anexos });
     $('texto').value = ''; arquivos = []; mostrarPrevia(); ajustarAltura();
     para = null; $('respondendo').hidden = true; $('projeto').value = 'auto';
@@ -495,6 +675,63 @@ async function enviar() {
   } catch (e) { $('aviso').textContent = e.message; }
   enviando = false;
 }
+
+// ----- configurações -----
+function desenharConfig() {
+  $('meuAvatarConfig').innerHTML = avatar(perfil.nome, 'g eu');
+  $('meuAvatarLateral').innerHTML = avatar(perfil.nome, 'eu');
+  $('meuNomeLateral').textContent = perfil.nome;
+  $('gradeAgentes').innerHTML = NOMES.map((n) => `<div class="um">
+      <div class="trocarFoto" data-foto-de="${slug(n)}" tabindex="0" title="Trocar a foto de ${escapar(n)}">${avatar(n)}</div>
+      <div style="color:${cor(n)}; font-weight:600">${escapar(n)}</div>
+      ${fotos[slug(n)] ? `<button class="botao texto" data-remover-foto="${slug(n)}">remover</button>` : ''}</div>`).join('');
+}
+function abrirConfig() { $('config').hidden = false; $('meuNome').value = perfil.nome; desenharConfig(); atualizarConexoes(); }
+$('abrirConfig').onclick = abrirConfig;
+$('abrirConfigLateral').onclick = abrirConfig;
+$('fecharConfig').onclick = () => ($('config').hidden = true);
+$('config').onclick = (e) => { if (e.target === $('config')) $('config').hidden = true; };
+
+// foto: recorta em quadrado e reduz no próprio navegador antes de enviar
+let fotoDe = null;
+async function reduzirFoto(arquivo) {
+  const img = await createImageBitmap(arquivo);
+  const lado = Math.min(img.width, img.height);
+  const tela = document.createElement('canvas'); tela.width = tela.height = 320;
+  tela.getContext('2d').drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 320, 320);
+  return tela.toDataURL('image/jpeg', 0.86).split(',')[1];
+}
+async function salvarFoto(quem, base64) {
+  const { foto } = await api('/api/avatares/' + quem, { base64 });
+  fotos[quem] = foto;
+  if (quem === 'eu') perfil.foto = foto;
+  assinaturaFotos = ''; desenharConfig(); atualizar();
+}
+$('config').addEventListener('click', (e) => {
+  const trocar = e.target.closest('[data-foto-de]');
+  const remover = e.target.closest('[data-remover-foto]');
+  if (trocar) { fotoDe = trocar.dataset.fotoDe; $('arquivoFoto').click(); }
+  if (remover) salvarFoto(remover.dataset.removerFoto, null).catch((x) => ($('avisoPerfil').textContent = x.message));
+});
+$('arquivoFoto').onchange = async (e) => {
+  const arquivo = e.target.files[0]; e.target.value = '';
+  if (!arquivo || !fotoDe) return;
+  try { await salvarFoto(fotoDe, await reduzirFoto(arquivo)); } catch (x) { $('avisoPerfil').className = 'nao'; $('avisoPerfil').textContent = 'Não consegui usar essa imagem: ' + x.message; }
+};
+$('salvarPerfil').onclick = async () => {
+  try {
+    perfil.nome = (await api('/api/perfil', { nome: $('meuNome').value })).nome;
+    $('avisoPerfil').className = 'ok'; $('avisoPerfil').textContent = 'salvo'; desenharConfig();
+  } catch (x) { $('avisoPerfil').className = 'nao'; $('avisoPerfil').textContent = x.message; }
+};
+$('trocarSenha').onclick = async () => {
+  const aviso = $('avisoSenha');
+  try {
+    await api('/api/senha', { atual: $('senhaAtual').value, nova: $('senhaNova').value });
+    $('senhaAtual').value = $('senhaNova').value = '';
+    aviso.className = 'ok'; aviso.textContent = 'senha trocada';
+  } catch (x) { aviso.className = 'nao'; aviso.textContent = x.message; }
+};
 
 // ----- conexões (login do Claude, do Codex e do GitHub nesta máquina) -----
 let loginPendente = false;
@@ -510,8 +747,8 @@ async function atualizarConexoes() {
       passo = `<div class="passoC">
         ${l.url ? `<div>1. <a href="${escapar(l.url)}" target="_blank" rel="noopener">Abrir a página de autorização</a></div>` : '<div>Iniciando o login…</div>'}
         ${l.codigo ? `<div>2. Digite lá este código: <b>${escapar(l.codigo)}</b></div>` : ''}
-        ${l.pedeCodigo ? `<div>2. Cole aqui o código que a página mostrar:</div>
-          <div style="display:flex; gap:8px"><input data-codigo-de="${c.id}"><button class="botao" data-enviar-codigo="${c.id}">Enviar</button></div>` : ''}
+        ${l.pedeCodigo ? `<label class="campo" style="margin:0">2. Cole aqui o código que a página mostrar<input data-codigo-de="${c.id}"></label>
+          <div><button class="botao" data-enviar-codigo="${c.id}">Enviar código</button></div>` : ''}
         <div style="color:var(--sub); font-size:13px">Atualiza sozinho quando a conexão for concluída.</div>
       </div>`;
     } else if (l?.estado === 'erro') {
@@ -535,23 +772,27 @@ $('conexoes').onclick = async (e) => {
   } catch (x) { $('conexoes').insertAdjacentHTML('beforeend', `<div class="nao">${escapar(x.message)}</div>`); }
   atualizarConexoes();
 };
-$('abrirConexoes').onclick = () => { $('janelaConexoes').hidden = false; atualizarConexoes(); };
-$('fecharConexoes').onclick = () => ($('janelaConexoes').hidden = true);
 
 // ----- início -----
 async function iniciar() {
-  carregarConfig();
+  botao();
   try {
+    const c = await api('/api/config');
+    transcricaoNoServidor = c.transcricao && !!navigator.mediaDevices?.getUserMedia && !!window.MediaRecorder;
+    perfil = c.perfil; fotos.eu = c.perfil.foto;
+    $('secaoSenha').hidden = !c.temSenha;
     projetos = await api('/api/projetos');
-    $('projeto').innerHTML = '<option value="auto">Projeto: automático</option>' +
+    $('projeto').innerHTML = '<option value="auto">Automático</option>' +
       projetos.map((p) => `<option value="${escapar(p.id)}" ${p.ativo ? '' : 'disabled'}>${escapar(p.nome)}${p.ativo ? '' : ' (indisponível)'}</option>`).join('');
   } catch {}
+  desenharConfig();
   await atualizar();
   $('conversa').scrollTop = $('conversa').scrollHeight;
+  if (location.hash === '#config') abrirConfig(); // link direto para as configurações
 }
 iniciar();
 setInterval(atualizar, 1500);
-setInterval(() => { if (loginPendente && !$('janelaConexoes').hidden) atualizarConexoes(); }, 3000);
+setInterval(() => { if (loginPendente && !$('config').hidden) atualizarConexoes(); }, 3000);
 </script>
 </body>
 </html>

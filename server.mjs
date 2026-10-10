@@ -192,7 +192,7 @@ function contextoDaConversa(idAtual) {
   const historico = recentes
     .map((p) => {
       const resposta = p.resultado ? `\n${p.agente || 'Brain'}${p.projeto ? ` (${p.projeto})` : ''}: ${curto(p.resultado, 350)}` : '';
-      return `Phedro: ${curto(p.texto, 300)}${resposta}`;
+      return `${lerPerfil().nome}: ${curto(p.texto, 300)}${resposta}`;
     })
     .join('\n');
   const equipe = [...agentes.values()]
@@ -215,7 +215,7 @@ async function rotear(pedido, projetos) {
     .join('\n');
   const { historico, equipe } = contextoDaConversa(pedido.id);
   const prompt =
-    `Você é o Brain, o assistente pessoal do Phedro. Ele conversa com você como num WhatsApp, quase sempre por voz. ` +
+    `Você é o Brain, o assistente pessoal de ${lerPerfil().nome}. Ele conversa com você como num WhatsApp, quase sempre por voz. ` +
     `A transcrição erra nomes próprios: troca por palavras comuns de som parecido (ex.: "visando tarefas", "vizando" ` +
     `ou "bizantu" = Vizantu Tarefas; "renã" = Renan; "tauper" = Tawper). Leia pelo SOM e pelo sentido, não pela grafia.\n\n` +
     `Você coordena oito agentes que executam trabalho: ${NOMES.join(', ')}. Para cada mensagem, decida o TIPO:\n\n` +
@@ -298,7 +298,7 @@ function montarPrompt(pedido, agente, projeto, continuando) {
   // Continuação na mesma sessão: o agente já tem todo o contexto.
   if (continuando) return `${pedido.texto}${anexos}\n\n---\n${entrega} ${tom}`;
 
-  const quem = `Você é ${agente.nome}, um dos agentes do Brain, o assistente pessoal do Phedro. Você está rodando sozinho, sem ninguém acompanhando.`;
+  const quem = `Você é ${agente.nome}, um dos agentes do Brain, o assistente pessoal de ${lerPerfil().nome}. Você está rodando sozinho, sem ninguém acompanhando.`;
   if (!projeto) {
     return (
       `${pedido.texto}${anexos}\n\n---\n${quem}\n` +
@@ -434,6 +434,13 @@ async function processar(pedido) {
 
     let alvo = acharAgente(pedido.para);
     let projeto = projetos.find((p) => p.id === pedido.projeto);
+    // Agente sem trabalho anterior não tem o que continuar: a mensagem é roteada
+    // normalmente e ele só fica como o preferido para pegar o pedido.
+    if (alvo && !alvo.sessao && !alvo.ocupado) {
+      pedido.preferir = alvo.nome;
+      pedido.para = null;
+      alvo = null;
+    }
 
     if (alvo) {
       pedido.tipo = 'continuar';
@@ -462,6 +469,7 @@ async function processar(pedido) {
         alvo = acharAgente(escolha.agente);
         // Agente sem trabalho anterior não tem o que continuar: vira um pedido novo.
         if (!alvo || (!alvo.sessao && !alvo.ocupado)) {
+          if (alvo) pedido.preferir = alvo.nome;
           alvo = null;
           pedido.tipo = escolha.projeto ? 'projeto' : 'geral';
         }
@@ -503,7 +511,8 @@ function despachar() {
       agente = acharAgente(pedido.para);
       if (agente.ocupado) continue;
     } else {
-      agente = [...agentes.values()].filter((a) => !a.ocupado).sort((a, b) => a.usadoEm - b.usadoEm)[0];
+      const livres = [...agentes.values()].filter((a) => !a.ocupado).sort((a, b) => a.usadoEm - b.usadoEm);
+      agente = livres.find((a) => a.nome === pedido.preferir) ?? livres[0];
       if (!agente) break;
     }
     fila.splice(fila.indexOf(id), 1);
@@ -762,6 +771,28 @@ const salvarSessoes = () => fs.writeFileSync(ARQ_SESSOES, JSON.stringify(Object.
 const falhas = new Map(); // ip -> { n, ate }
 const SESSAO_MS = 90 * 24 * 60 * 60 * 1000;
 
+// A senha trocada pela página fica guardada (scrypt) e passa a valer no lugar de BRAIN_SENHA.
+const ARQ_SENHA = path.join(DADOS, 'senha.json');
+function senhaConfere(tentativa) {
+  let guardada = null;
+  try {
+    guardada = JSON.parse(fs.readFileSync(ARQ_SENHA, 'utf8'));
+  } catch {}
+  if (guardada) {
+    const h = crypto.scryptSync(String(tentativa ?? ''), Buffer.from(guardada.sal, 'hex'), 64);
+    return crypto.timingSafeEqual(h, Buffer.from(guardada.hash, 'hex'));
+  }
+  const a = crypto.createHash('sha256').update(String(tentativa ?? '')).digest();
+  const b = crypto.createHash('sha256').update(SENHA).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+function gravarSenha(nova) {
+  const sal = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(nova, sal, 64);
+  fs.writeFileSync(ARQ_SENHA, JSON.stringify({ sal: sal.toString('hex'), hash: hash.toString('hex') }), { mode: 0o600 });
+}
+const tokenDaSessao = (req) => (req.headers.cookie || '').match(/(?:^|;\s*)central_sessao=([a-f0-9]{64})/)?.[1];
+
 function logado(req) {
   if (!SENHA) return true;
   const token = (req.headers.cookie || '').match(/(?:^|;\s*)central_sessao=([a-f0-9]{64})/)?.[1];
@@ -775,9 +806,7 @@ async function entrar(req, res) {
   const f = falhas.get(ip);
   if (f && f.n >= 8 && f.ate > Date.now()) return responder(res, 429, { erro: 'muitas tentativas; aguarde 15 minutos' });
   const { senha } = JSON.parse(await lerCorpo(req));
-  const a = crypto.createHash('sha256').update(String(senha ?? '')).digest();
-  const b = crypto.createHash('sha256').update(SENHA).digest();
-  if (!crypto.timingSafeEqual(a, b)) {
+  if (!senhaConfere(senha)) {
     falhas.set(ip, { n: (f && f.ate > Date.now() ? f.n : 0) + 1, ate: Date.now() + 15 * 60 * 1000 });
     await new Promise((r) => setTimeout(r, 800));
     return responder(res, 401, { erro: 'senha incorreta' });
@@ -817,6 +846,31 @@ async function webhookWhatsapp(req, res, caminho) {
   } catch {
     fim(400);
   }
+}
+
+// ---------- perfil e fotos ----------
+
+const ARQ_PERFIL = path.join(DADOS, 'perfil.json');
+function lerPerfil() {
+  try {
+    return { nome: 'Phedro', ...JSON.parse(fs.readFileSync(ARQ_PERFIL, 'utf8')) };
+  } catch {
+    return { nome: 'Phedro' };
+  }
+}
+
+// Fotos: as enviadas pela página ficam em <dados>/avatares; as do repositório, em avatares/.
+const DIR_FOTOS = path.join(DADOS, 'avatares');
+const QUEM_TEM_FOTO = new Set(['eu', ...NOMES.map(semAcento)]);
+const cacheFotos = new Map(); // quem -> { caminho, versao } | null
+function fotoDe(quem) {
+  if (!cacheFotos.has(quem)) {
+    const caminho = [DIR_FOTOS, path.join(RAIZ, 'avatares')]
+      .flatMap((dir) => ['jpg', 'jpeg', 'png', 'webp'].map((e) => path.join(dir, `${quem}.${e}`)))
+      .find((c) => fs.existsSync(c));
+    cacheFotos.set(quem, caminho ? { caminho, versao: Math.round(fs.statSync(caminho).mtimeMs) } : null);
+  }
+  return cacheFotos.get(quem);
 }
 
 // ---------- conversa (o que a página mostra) ----------
@@ -876,7 +930,9 @@ const servidor = http.createServer(async (req, res) => {
     if (rota === 'POST /api/login' && SENHA) return entrar(req, res);
     if (!logado(req)) return responder(res, 401, { erro: 'faça login' });
     if (url.pathname.startsWith('/api/conexoes')) return await rotasConexoes(req, res, url);
-    if (rota === 'GET /api/config') return responder(res, 200, { transcricao: !!cfg('OPENAI_API_KEY') });
+    if (rota === 'GET /api/config') {
+      return responder(res, 200, { transcricao: !!cfg('OPENAI_API_KEY'), temSenha: !!SENHA, perfil: { ...lerPerfil(), foto: fotoDe('eu')?.versao ?? null } });
+    }
     if (rota === 'POST /api/transcrever') {
       const corpo = JSON.parse(await lerCorpo(req));
       return responder(res, 200, { texto: await transcrever(String(corpo.audio || ''), String(corpo.tipo || '')) });
@@ -893,15 +949,58 @@ const servidor = http.createServer(async (req, res) => {
       const projetos = lerProjetos();
       return responder(res, 200, {
         pedidos: listar().slice(0, 80).reverse().map((p) => verPedido(p, projetos)),
-        agentes: [...agentes.values()].map((a) => ({ nome: a.nome, ocupado: a.ocupado, temSessao: !!a.sessao, projeto: a.projeto })),
+        agentes: [...agentes.values()].map((a) => ({
+          nome: a.nome,
+          ocupado: a.ocupado,
+          temSessao: !!a.sessao,
+          projeto: a.projeto,
+          projetoNome: projetos.find((x) => x.id === a.projeto)?.nome ?? null,
+          resumo: a.resumo,
+          foto: fotoDe(semAcento(a.nome))?.versao ?? null,
+        })),
       });
     }
 
-    // Foto do agente: avatares/<nome sem acento>.(jpg|png|webp), se existir.
-    const avatar = url.pathname.match(/^\/avatares\/([a-z]+)$/);
-    if (avatar && req.method === 'GET') {
-      const achado = ['jpg', 'jpeg', 'png', 'webp'].map((e) => path.join(RAIZ, 'avatares', `${avatar[1]}.${e}`)).find((c) => fs.existsSync(c));
-      return achado ? enviarArquivo(res, achado) : responder(res, 404, { erro: 'sem foto' });
+    const foto = url.pathname.match(/^\/avatares\/([a-z]+)$/);
+    if (foto && req.method === 'GET') {
+      const achada = QUEM_TEM_FOTO.has(foto[1]) && fotoDe(foto[1]);
+      return achada ? enviarArquivo(res, achada.caminho) : responder(res, 404, { erro: 'sem foto' });
+    }
+    // Enviar ou remover a foto (a página já manda um JPEG pequeno e quadrado).
+    const trocarFoto = url.pathname.match(/^\/api\/avatares\/([a-z]+)$/);
+    if (trocarFoto && req.method === 'POST') {
+      const quem = trocarFoto[1];
+      if (!QUEM_TEM_FOTO.has(quem)) return responder(res, 404, { erro: 'agente desconhecido' });
+      const { base64 } = JSON.parse(await lerCorpo(req));
+      fs.mkdirSync(DIR_FOTOS, { recursive: true });
+      for (const e of ['jpg', 'jpeg', 'png', 'webp']) fs.rmSync(path.join(DIR_FOTOS, `${quem}.${e}`), { force: true });
+      if (base64) {
+        const imagem = Buffer.from(String(base64), 'base64');
+        if (imagem.length > 2 * 1024 * 1024) return responder(res, 400, { erro: 'foto grande demais' });
+        if (imagem[0] !== 0xff || imagem[1] !== 0xd8) return responder(res, 400, { erro: 'a foto precisa ser JPEG' });
+        fs.writeFileSync(path.join(DIR_FOTOS, `${quem}.jpg`), imagem);
+      }
+      cacheFotos.delete(quem);
+      return responder(res, 200, { foto: fotoDe(quem)?.versao ?? null });
+    }
+
+    if (rota === 'POST /api/perfil') {
+      const nome = String(JSON.parse(await lerCorpo(req)).nome || '').trim().slice(0, 40);
+      if (!nome) return responder(res, 400, { erro: 'escreva o nome' });
+      fs.writeFileSync(ARQ_PERFIL, JSON.stringify({ nome }));
+      return responder(res, 200, { nome });
+    }
+    if (rota === 'POST /api/senha') {
+      if (!SENHA) return responder(res, 400, { erro: 'neste computador o Brain não usa senha' });
+      const { atual, nova } = JSON.parse(await lerCorpo(req));
+      if (!senhaConfere(atual)) return responder(res, 400, { erro: 'a senha atual não confere' });
+      if (String(nova || '').length < 8) return responder(res, 400, { erro: 'a senha nova precisa de pelo menos 8 caracteres' });
+      gravarSenha(String(nova));
+      // Sai de todos os outros aparelhos; este continua logado.
+      const esta = tokenDaSessao(req) && hashDe(tokenDaSessao(req));
+      for (const h of [...sessoes.keys()]) if (h !== esta) sessoes.delete(h);
+      salvarSessoes();
+      return responder(res, 200, { ok: true });
     }
 
     const arquivo = url.pathname.match(/^\/api\/arquivo\/([\w-]+)\/(anexos|entrega)\/([^/]+)$/);
