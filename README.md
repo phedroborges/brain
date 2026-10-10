@@ -49,6 +49,7 @@ como anexos. A foto de cada agente fica em `avatares/<nome sem acento>.jpg` (ou
 | `motor` | `claude` ou `codex` quando a mensagem não escolhe. |
 | `publicar` | `main` (padrão: commit e push direto), `branch` (branch + pull request) ou `nao`. |
 | `ativo`, `motivo` | `false` tira o projeto de uso e explica por quê. |
+| `base` | `true` marca a base de processos: todo agente consulta os passo a passos e contextos de clientes dela antes de qualquer entrega, mesmo em pedidos de outros projetos ou sem projeto. |
 | `pasta` | Só se o projeto não estiver em `~/projetos/<id>`. |
 
 ## Rodar no PC

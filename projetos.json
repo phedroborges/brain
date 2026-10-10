@@ -25,7 +25,8 @@
     ],
     "repo": "phedroborges/vizantu-documentacao",
     "descricao": "Repositório central de documentação da Vizantu: POPs, contextos de clientes, decisões, processos, skills e agentes.",
-    "motor": "claude"
+    "motor": "claude",
+    "base": true
   },
   {
     "id": "vizantu-planos",

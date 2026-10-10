@@ -289,8 +289,48 @@ function regraDePublicacao(pedido, projeto) {
   );
 }
 
+// A base de processos é o projeto marcado com "base": true no cadastro: lá ficam os
+// passo a passos (POPs) e os contextos de clientes que valem para qualquer pedido.
+function lerBase() {
+  return lerProjetos().find((p) => p.base && p.ativo) ?? null;
+}
+
+// Deixa a base clonada e atualizada antes do agente começar. Sem ela o pedido segue.
+async function prepararBase(pedido) {
+  const base = lerBase();
+  if (!base) return;
+  if (!fs.existsSync(base.pasta)) {
+    if (!base.repo) return;
+    passo(pedido.id, `clonando ${base.repo}`);
+    fs.mkdirSync(path.dirname(base.pasta), { recursive: true });
+    const c = await rodar('gh', ['repo', 'clone', base.repo, base.pasta], { cwd: path.dirname(base.pasta) });
+    if (c.codigo !== 0) log(pedido.id, `[brain] não consegui clonar a base ${base.repo}: ${(c.erro || c.saida).slice(0, 300)}`);
+    return;
+  }
+  // Quando o pedido é na própria base, o agente já faz o git pull dele.
+  if (pedido.projeto === base.id) return;
+  const p = await rodar('git', ['pull', '--ff-only'], { cwd: base.pasta });
+  if (p.codigo !== 0) log(pedido.id, `[brain] não consegui atualizar a base: ${(p.erro || p.saida).slice(0, 300)}`);
+}
+
+function regraDeProcessos(projeto) {
+  const base = lerBase();
+  if (!base || !fs.existsSync(base.pasta)) return '';
+  const naBase = projeto?.id === base.id;
+  const onde = naBase ? 'neste projeto' : `em "${base.pasta}" (${base.nome})`;
+  return (
+    `Temos passo a passo: não faça do jeito que você acha. Antes de produzir qualquer entrega (legenda, copy, roteiro, ` +
+    `tarefa, plano, relatório, documento, mensagem para cliente), procure ${onde} o processo daquele tipo de entrega e o ` +
+    `contexto do cliente envolvido, começando pelo CLAUDE.md/README, e siga o que estiver escrito. ` +
+    (naBase ? '' : `Só leia essa pasta, não altere nada nela. `) +
+    `Se não existir passo a passo para o que foi pedido, faça pelo seu melhor critério e avise em uma linha que não havia ` +
+    `processo documentado. Se não souber de qual cliente é o pedido e isso mudar o resultado, pergunte antes.`
+  );
+}
+
 function montarPrompt(pedido, agente, projeto, continuando) {
   const dir = path.join(PEDIDOS, pedido.id);
+  const processos = regraDeProcessos(projeto);
   const anexos = pedido.anexos.length
     ? `\n\nAnexos desta mensagem (leia todos antes de começar):\n${pedido.anexos.map((a) => '- ' + a).join('\n')}`
     : '';
@@ -310,7 +350,7 @@ function montarPrompt(pedido, agente, projeto, continuando) {
     `"series":[{"nome":"Receita","valores":[10,20]}],"prefixo":"R$ ","sufixo":""}. A conversa desenha o gráfico.`;
 
   // Continuação na mesma sessão: o agente já tem todo o contexto.
-  if (continuando) return `${pedido.texto}${anexos}\n\n---\n${entrega} ${tom}`;
+  if (continuando) return `${pedido.texto}${anexos}\n\n---\n${processos ? processos + ' ' : ''}${entrega} ${tom}`;
 
   // Pedido novo também recebe a conversa recente, para o agente não começar no escuro.
   const { historico } = contextoDaConversa(pedido.id);
@@ -323,8 +363,7 @@ function montarPrompt(pedido, agente, projeto, continuando) {
       `1. Responda ao que foi pedido. Se depender de informação atual ou que você não tem certeza, pesquise na ` +
       `internet antes e cite as fontes em uma linha no final.\n` +
       `2. Não altere nenhum projeto nem repositório.\n` +
-      `3. ${entrega}\n` +
-      `4. ${tom}`
+      (processos ? `3. ${processos}\n4. ${entrega}\n5. ${tom}` : `3. ${entrega}\n4. ${tom}`)
     );
   }
   return (
@@ -334,8 +373,7 @@ function montarPrompt(pedido, agente, projeto, continuando) {
     `2. ${regraDePublicacao(pedido, projeto)}\n` +
     `3. Use as skills e ferramentas do projeto quando existirem para o tipo de entrega pedido.\n` +
     `4. Se faltar informação essencial, não invente: pergunte antes de mexer.\n` +
-    `5. ${entrega}\n` +
-    `6. ${tom}`
+    (processos ? `5. ${processos}\n6. ${entrega}\n7. ${tom}` : `5. ${entrega}\n6. ${tom}`)
   );
 }
 
@@ -560,6 +598,8 @@ async function trabalhar(pedido, agente) {
       pasta = path.join(DADOS, 'geral');
       fs.mkdirSync(pasta, { recursive: true });
     }
+
+    await prepararBase(pedido);
 
     pedido.motor = pedido.motor || (continuando && agente.motor) || projeto?.motor || projeto?.agente || 'claude';
     const conexoes = await statusConexoes();
