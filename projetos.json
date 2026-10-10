@@ -5,7 +5,11 @@
     "apelidos": [
       "vizantu tarefas",
       "sistema de tarefas",
-      "tarefas da vizantu"
+      "tarefas da vizantu",
+      "visando tarefas",
+      "vizando tarefas",
+      "bizantu tarefas",
+      "tarefas"
     ],
     "repo": "phedroborges/vizantu-tarefas",
     "descricao": "Sistema de tarefas da Vizantu (Next.js + Supabase). Projetos de clientes (ex.: Dr. Lourival), tarefas da equipe (ex.: Cynthia), planos e fila de demandas.",
@@ -38,7 +42,9 @@
     "nome": "Tawper OS",
     "apelidos": [
       "tawper",
-      "sistema da tawper"
+      "sistema da tawper",
+      "tauper",
+      "tóper"
     ],
     "repo": "phedroborges/tawper-os",
     "descricao": "Sistema geral da Tawper (TypeScript).",
@@ -108,7 +114,9 @@
     "apelidos": [
       "site do renan",
       "renan liscano",
-      "renanliscano.adv.br"
+      "renanliscano.adv.br",
+      "site do renã",
+      "renan"
     ],
     "repo": "phedroborges/site-renan-liscano",
     "descricao": "Site institucional (Next.js) com landing pages de serviços do advogado Renan Liscano. Os textos ficam em conteudo/ e lib/paginas/.",

@@ -19,7 +19,7 @@ ENV HOME=/dados \
     BRAIN_DATA_DIR=/dados/.brain
 
 WORKDIR /app
-COPY server.mjs index.html projetos.json docker-entrypoint.sh ./
+COPY server.mjs index.html projetos.json vocabulario.json docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
 VOLUME /dados

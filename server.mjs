@@ -62,6 +62,15 @@ function lerProjetos() {
   }));
 }
 
+// Nomes próprios que a transcrição costuma errar (clientes, pessoas, marcas).
+function lerVocabulario() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(RAIZ, 'vocabulario.json'), 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
 // Na VPS o git precisa de identidade e de credencial para clonar e fazer push.
 // GH_TOKEN (lido pelo gh) resolve a credencial; nome e e-mail vêm do ambiente.
 function prepararGit() {
@@ -152,11 +161,21 @@ async function rotear(pedido, projetos) {
     )
     .join('\n');
   const prompt =
-    `Você é um roteador. Decida a qual projeto o pedido abaixo se refere.\n\n` +
+    `Você recebe pedidos do Phedro, quase sempre ditados por voz. A transcrição erra nomes próprios: ` +
+    `troca por palavras comuns de som parecido (ex.: "visando tarefas", "vizando" ou "bizantu" = Vizantu Tarefas; ` +
+    `"renã" = Renan; "tauper" = Tawper). Sua tarefa tem duas partes.\n\n` +
+    `1) Entender de qual projeto ele está falando. Leia pelo SOM e pelo sentido, não pela grafia. ` +
+    `Escolha o projeto mais provável: não precisa de concordância exata, basta ser a leitura mais natural do pedido. ` +
+    `O projeto "brain" só é a resposta quando o pedido é sobre o próprio Brain (este sistema de pedidos) ou sobre as ` +
+    `anotações pessoais; o fato de o Brain registrar pedidos não o torna candidato para pedidos sobre outros projetos. ` +
+    `Responda null apenas quando nenhum projeto da lista combinar de forma plausível.\n\n` +
+    `2) Reescrever o pedido corrigindo SÓ os nomes que a transcrição errou (projetos, clientes, pessoas), usando a ` +
+    `lista e o vocabulário abaixo. Não mude o sentido, não resuma, não acrescente nada.\n\n` +
     `Projetos:\n${catalogo}\n\n` +
-    `Pedido (pode vir de transcrição de áudio, com nomes escritos errado):\n"""${pedido.texto}"""\n\n` +
-    `Responda SOMENTE com um JSON: {"projeto":"<id ou null>","motivo":"<uma frase>"}. ` +
-    `Use null se não der para decidir com segurança. Não use ferramentas.`;
+    `Vocabulário (nomes que ele costuma falar): ${lerVocabulario().join(', ')}\n\n` +
+    `Pedido transcrito:\n"""${pedido.texto}"""\n\n` +
+    `Responda SOMENTE com um JSON: {"projeto":"<id ou null>","motivo":"<uma frase>","texto":"<pedido com os nomes corrigidos>"}. ` +
+    `Não use ferramentas.`;
   const r = await rodar('claude', ['-p', '--model', MODELO_ROTEADOR, '--output-format', 'json'], {
     cwd: path.join(PEDIDOS, pedido.id),
     entrada: prompt,
@@ -306,6 +325,12 @@ async function processar(pedido) {
       salvar(pedido);
       const escolha = await rotear(pedido, projetos);
       pedido.roteador = escolha;
+      // O agente recebe o pedido com os nomes corrigidos; o ditado original fica guardado.
+      const corrigido = typeof escolha.texto === 'string' ? escolha.texto.trim() : '';
+      if (corrigido && corrigido !== pedido.texto && corrigido.length < pedido.texto.length * 1.5 + 40) {
+        pedido.textoOriginal = pedido.texto;
+        pedido.texto = corrigido;
+      }
       projeto = projetos.find((p) => p.id === escolha.projeto);
       if (!projeto) {
         pedido.status = 'sem_projeto';

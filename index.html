@@ -158,6 +158,7 @@ async function atualizar() {
     if (detalhe && detalhe.id === p.id) {
       extra = `<div class="detalhe">
         ${p.erro ? `<div class="aviso">${escapar(p.erro)}</div>` : ''}
+        ${p.textoOriginal ? `<div class="rotulo">Como foi ditado</div><div>${escapar(p.textoOriginal)}</div>` : ''}
         ${p.roteador ? `<div class="rotulo">Roteador</div><div>${escapar(p.roteador.motivo)}</div>` : ''}
         ${p.resultado ? `<div class="rotulo">Resultado</div><pre>${escapar(p.resultado)}</pre>` : ''}
         <div class="rotulo">Log</div><pre class="log">${escapar(detalhe.log) || 'sem saída ainda'}</pre>
