@@ -1220,11 +1220,15 @@ function lerPerfil() {
 const DIR_FOTOS = path.join(DADOS, 'avatares');
 const QUEM_TEM_FOTO = new Set(['eu', ...NOMES.map(semAcento)]);
 const cacheFotos = new Map(); // quem -> { caminho, versao } | null
+// As fotos oficiais dos agentes entraram no repositório nesta data. Foto enviada
+// pela página ANTES disso era provisória e perde para a oficial; enviada depois, vence.
+const FOTOS_OFICIAIS_DESDE = Date.parse('2026-10-10T20:15:00Z');
 function fotoDe(quem) {
   if (!cacheFotos.has(quem)) {
-    const caminho = [DIR_FOTOS, path.join(RAIZ, 'avatares')]
-      .flatMap((dir) => ['jpg', 'jpeg', 'png', 'webp'].map((e) => path.join(dir, `${quem}.${e}`)))
-      .find((c) => fs.existsSync(c));
+    const achar = (dir) => ['jpg', 'jpeg', 'png', 'webp'].map((e) => path.join(dir, `${quem}.${e}`)).find((c) => fs.existsSync(c));
+    const enviada = achar(DIR_FOTOS);
+    const oficial = achar(path.join(RAIZ, 'avatares'));
+    const caminho = enviada && (!oficial || fs.statSync(enviada).mtimeMs > FOTOS_OFICIAIS_DESDE) ? enviada : oficial;
     cacheFotos.set(quem, caminho ? { caminho, versao: Math.round(fs.statSync(caminho).mtimeMs) } : null);
   }
   return cacheFotos.get(quem);
